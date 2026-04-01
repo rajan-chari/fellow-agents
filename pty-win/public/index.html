@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pty-win</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5/css/xterm.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span class="sidebar-title">EXPLORER</span>
+      <div>
+        <button id="btn-collapse" title="Collapse (Ctrl+Shift+B)">&lsaquo;</button>
+      </div>
+    </div>
+    <div id="quick-access-panel"></div>
+    <div id="sessions-panel">
+      <div class="panel-header" id="sessions-panel-header">
+        <span class="arrow expanded"></span>
+        <span class="panel-title">SESSIONS</span>
+        <span class="session-count"></span>
+      </div>
+      <div class="panel-body expanded" id="sessions-list"></div>
+    </div>
+    <div id="folders-panel">
+      <div class="panel-header" id="folders-panel-header">
+        <span class="arrow expanded"></span>
+        <span class="panel-title">FOLDERS</span>
+        <span class="folder-count"></span>
+        <span class="panel-actions">
+          <button id="btn-collapse-all" title="Collapse All">&#x2bc8;</button>
+          <button id="btn-refresh" title="Refresh">&#x21bb;</button>
+        </span>
+      </div>
+      <div class="panel-body expanded" id="folder-tree"></div>
+    </div>
+    <div id="sidebar-footer">
+      <button id="btn-add-root" title="Add folder root">+ Add Root</button>
+    </div>
+    <div id="sidebar-resize-handle"></div>
+  </div>
+
+  <!-- Sidebar collapsed strip -->
+  <div id="sidebar-strip" class="hidden">
+    <button id="btn-expand" title="Expand (Ctrl+Shift+B)">&rsaquo;</button>
+  </div>
+
+  <!-- Main area -->
+  <div id="main">
+    <div id="tabbar">
+      <div id="tabs"></div>
+    </div>
+    <div id="workspace-area"></div>
+  </div>
+
+  <!-- Emcom feed panel (right side) -->
+  <div id="feed-panel">
+    <div id="feed-resize-handle"></div>
+    <div id="feed-header">
+      <div id="feed-header-left">
+        <span id="feed-title">EMCOM FEED</span>
+        <span id="feed-unread-badge" class="feed-badge hidden">0</span>
+      </div>
+      <div id="feed-header-right">
+        <span id="feed-identity-badge" class="feed-id-badge"></span>
+        <button id="feed-expand-all" class="feed-header-btn" title="Expand all">&#x25BC;</button>
+        <button id="feed-collapse-all" class="feed-header-btn" title="Collapse all">&#x25B2;</button>
+        <button id="feed-collapse-btn" title="Collapse feed">&#x276D;</button>
+      </div>
+    </div>
+    <div id="feed-toolbar">
+      <input id="feed-search" type="text" placeholder="filter..." autocomplete="off">
+      <select id="feed-sender-filter"><option value="">all</option></select>
+      <button id="feed-sort-btn" class="feed-header-btn" title="Toggle sort order">&#x25BC;</button>
+      <button id="feed-threads-btn" class="feed-header-btn" title="Toggle thread collapse">&#x2261;</button>
+    </div>
+    <div id="feed-body"></div>
+  </div>
+  <div id="feed-strip" class="hidden">
+    <span id="feed-strip-badge" class="feed-strip-unread hidden">0</span>
+    <button id="feed-expand-btn" title="Expand feed">&#x276C;</button>
+  </div>
+
+  <!-- Quick-open overlay (Ctrl+P) -->
+  <div id="quick-open" class="hidden">
+    <div id="quick-open-box">
+      <input id="quick-open-input" type="text" placeholder="Type folder name to open..." autocomplete="off">
+      <div id="quick-open-results"></div>
+    </div>
+  </div>
+
+  <!-- Pane context menu -->
+  <div id="pane-context-menu" class="hidden"></div>
+
+  <!-- Context menu -->
+  <div id="context-menu" class="hidden">
+    <div class="ctx-item" data-action="open">Open session</div>
+    <div class="ctx-item" data-action="open-new-ws">Open in new workspace</div>
+    <div class="ctx-item" data-action="open-cmd">Open with command...</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="force-idle">Force idle (allow emcom inject)</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="new-folder">New Folder...</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="fav-add">Add to Favorites</div>
+    <div class="ctx-item" data-action="fav-remove">Remove from Favorites</div>
+    <div class="ctx-sep ctx-sep-pin"></div>
+    <div class="ctx-item" data-action="pin-add">Pin to Quick Access</div>
+    <div class="ctx-item" data-action="pin-remove">Unpin from Quick Access</div>
+  </div>
+
+  <!-- Fallback modal: manual path entry -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal">
+      <div class="modal-title">Open Folder</div>
+      <label>Path<input id="m-path" type="text" placeholder="C:\projects\my-app"></label>
+      <label>Command<input id="m-cmd" type="text" placeholder="claude" value="claude"></label>
+      <div class="modal-actions">
+        <button id="m-cancel">Cancel</button>
+        <button id="m-create">Open</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0/lib/addon-fit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0/lib/addon-web-links.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

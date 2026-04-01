@@ -1,0 +1,4 @@
+node_modules/
+pty-win/node_modules/
+.claude/settings.local.json
+*.log
