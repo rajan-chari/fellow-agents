@@ -64,7 +64,7 @@ foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     }
 }
 
-# --- Install pty-win dependencies ---
+# --- Install pty-win dependencies + link command ---
 if (-not (Test-Path (Join-Path $PtyWinDir "node_modules"))) {
     Write-Host "[fellow-agents] Installing pty-win dependencies..." -ForegroundColor Cyan
     Push-Location $PtyWinDir
@@ -72,15 +72,22 @@ if (-not (Test-Path (Join-Path $PtyWinDir "node_modules"))) {
     Pop-Location
     Write-Host "[fellow-agents] Dependencies installed" -ForegroundColor Green
 }
+# Ensure pty-win is available as a command
+$ptyWinCmd = Get-Command "pty-win" -ErrorAction SilentlyContinue
+if (-not $ptyWinCmd) {
+    Write-Host "[fellow-agents] Linking pty-win command..." -ForegroundColor Cyan
+    Push-Location $PtyWinDir
+    npm link 2>&1 | Out-Null
+    Pop-Location
+}
 
 # --- Start pty-win ---
 Write-Host "[fellow-agents] Starting pty-win on port $PtyWinPort..." -ForegroundColor Cyan
-$ptyProc = Start-Process -FilePath "node" -ArgumentList @(
-    "dist/index.js",
+$ptyProc = Start-Process -FilePath "pty-win" -ArgumentList @(
     "--port", $PtyWinPort,
     "--root", $WorkspacesDir,
     "--emcom", "http://127.0.0.1:8800"
-) -WorkingDirectory $PtyWinDir -PassThru -WindowStyle Hidden
+) -PassThru -WindowStyle Hidden
 Write-Host "[fellow-agents] pty-win started (PID $($ptyProc.Id))" -ForegroundColor Green
 
 # --- Open browser ---
