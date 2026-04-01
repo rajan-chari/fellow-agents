@@ -1,43 +1,31 @@
 # fellow-agents
 
-Multi-agent Claude Code starter kit. Clone, run, collaborate.
+Multi-agent Claude Code. Clone, run, collaborate.
 
-## Prerequisites
-
-- [Node.js](https://nodejs.org/) 18+
-- [Claude Code](https://claude.ai/code)
-- Windows + PowerShell 7+
-
-## Start
+## Quick Start
 
 ```powershell
 git clone https://github.com/rajan-chari/fellow-agents.git
 cd fellow-agents
-./start.ps1        # starts emcom-server (:8800) + pty-win (:3700), opens browser
+./start.ps1
 ```
 
-`Ctrl+C` to stop everything.
+Opens browser at `:3700`. Three agents ready: **coordinator**, **coder**, **reviewer**.
 
-## Agents
+Click ▶ on **coordinator** and say: *"Have the coder write a fibonacci script and the reviewer check it."*
 
-| Agent | Role |
-|-------|------|
-| **coordinator** | Delegates tasks, collects results |
-| **coder** | Writes and fixes code |
-| **reviewer** | Reviews code for quality |
+Watch the emcom feed panel (right sidebar) — agents messaging each other.
 
-Each has a `CLAUDE.md` (instructions) and `identity.json` (emcom identity) in `workspaces/`.
+`Ctrl+C` stops everything.
 
-## Try It
+## Prerequisites
 
-1. Open **coordinator** (click ▶ in pty-win)
-2. Say: *"Have the coder write a fibonacci script and the reviewer check it."*
-3. Watch the emcom feed panel (right sidebar)
+Node.js 18+, Claude Code, Windows + PowerShell 7+
 
 ## Add an Agent
 
+Copy an existing workspace folder, edit CLAUDE.md + identity.json, register:
+
 ```powershell
-mkdir workspaces/myagent
-# Add CLAUDE.md and identity.json (copy from an existing agent)
 ./bin/emcom --identity workspaces/myagent/identity.json register
 ```
