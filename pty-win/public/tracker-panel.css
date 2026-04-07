@@ -1,0 +1,562 @@
+/* ===== Tracker Panel — Terminal Command Center ===== */
+
+/* --- Layout --- */
+.tracker-view {
+  font-family: 'Cascadia Code', Consolas, 'Courier New', monospace;
+  color: #ccc;
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+  background: #111114;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+
+.tracker-view::-webkit-scrollbar { width: 6px; }
+.tracker-view::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* --- Header Bar --- */
+.tracker-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, #1a1a1e 0%, #141417 100%);
+  border-bottom: 1px solid #2a2a2e;
+  backdrop-filter: blur(8px);
+}
+
+.tracker-chrome-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #888;
+}
+
+.tracker-chrome-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 10px;
+  color: #666;
+}
+
+.tracker-chrome-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tracker-chrome-stat .val {
+  color: #aaa;
+  font-weight: 500;
+}
+
+.tracker-chrome-stat.decision .val {
+  color: #d4882a;
+  font-weight: 700;
+}
+
+/* --- Filter Bar --- */
+.tracker-filters {
+  display: flex;
+  gap: 6px;
+  padding: 5px 16px;
+  background: #141417;
+  border-bottom: 1px solid #2a2a2e;
+}
+
+.tracker-filter {
+  font-family: inherit;
+  font-size: 10px;
+  background: #1e1e22;
+  color: #999;
+  border: 1px solid #2a2a2e;
+  padding: 2px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.tracker-filter:focus { border-color: #d4882a; outline: none; }
+
+.tracker-category-btns {
+  display: flex;
+  gap: 2px;
+  margin-right: 8px;
+}
+
+.tracker-cat-btn {
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  background: #1e1e22;
+  color: #666;
+  border: 1px solid #2a2a2e;
+  padding: 2px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.tracker-cat-btn:hover { color: #999; border-color: #444; }
+.tracker-cat-btn.active { color: #d4882a; border-color: #d4882a; background: rgba(212, 136, 42, 0.1); }
+
+/* --- GitHub Link --- */
+.tracker-gh-link {
+  color: #4a9eff;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.tracker-gh-link:hover { text-decoration: underline; color: #6ab0ff; }
+
+/* --- Column Resize Handle --- */
+.tracker-col-resize {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  z-index: 5;
+}
+.tracker-col-resize:hover,
+.tracker-col-resize.dragging {
+  background: #d4882a44;
+}
+
+/* --- Table Header (sortable) --- */
+.tracker-thead {
+  display: grid;
+  grid-template-columns: 110px 1fr 90px 70px 60px 60px 60px;
+  padding: 4px 16px;
+  background: #18181c;
+  border-bottom: 1px solid #2a2a2e;
+  position: sticky;
+  top: 41px;
+  z-index: 9;
+}
+
+.tracker-th {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+
+.tracker-th:hover { color: #999; }
+.tracker-th.sort-active { color: #d4882a; }
+
+.tracker-th .sort-arrow {
+  font-size: 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.tracker-th:hover .sort-arrow,
+.tracker-th.sort-active .sort-arrow { opacity: 1; }
+
+/* --- Status Group --- */
+.tracker-group {
+  margin: 0;
+  border-bottom: 1px solid #1e1e22;
+}
+
+.tracker-group-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px 4px;
+  background: #141417;
+}
+
+.tracker-group-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tracker-group-name {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.tracker-group-count {
+  font-size: 9px;
+  color: #444;
+  font-weight: 400;
+}
+
+/* Status group colors */
+.tracker-group[data-status="decision-pending"] .tracker-group-dot { background: #d4882a; box-shadow: 0 0 6px #d4882a88; }
+.tracker-group[data-status="decision-pending"] .tracker-group-name { color: #d4882a; }
+.tracker-group[data-status="investigating"] .tracker-group-dot { background: #4a9eff; }
+.tracker-group[data-status="investigating"] .tracker-group-name { color: #5a8abf; }
+.tracker-group[data-status="implementing"] .tracker-group-dot { background: #23d18b; }
+.tracker-group[data-status="implementing"] .tracker-group-name { color: #3a9a70; }
+.tracker-group[data-status="monitoring"] .tracker-group-dot { background: #b07aff; }
+.tracker-group[data-status="monitoring"] .tracker-group-name { color: #8a6abf; }
+.tracker-group[data-status="blocked"] .tracker-group-dot { background: #f14c4c; box-shadow: 0 0 6px #f14c4c66; }
+.tracker-group[data-status="blocked"] .tracker-group-name { color: #c05050; }
+.tracker-group[data-status="deferred"] .tracker-group-dot { background: #555; }
+.tracker-group[data-status="deferred"] .tracker-group-name { color: #555; }
+
+/* --- Decision-Pending Emphasis --- */
+.tracker-group[data-status="decision-pending"] {
+  background: linear-gradient(90deg, rgba(212, 136, 42, 0.06) 0%, transparent 60%);
+  border-left: 2px solid #d4882a;
+}
+
+.tracker-group[data-status="decision-pending"] .tracker-item {
+  background: rgba(212, 136, 42, 0.04);
+}
+
+/* --- Item Row --- */
+.tracker-item {
+  contain: content;
+  transition: background 0.1s;
+}
+
+.tracker-item:nth-child(even) {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.tracker-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.tracker-item-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 90px 70px 60px 60px 60px;
+  padding: 2px 16px;
+  cursor: pointer;
+  align-items: center;
+  min-height: 20px;
+  border-bottom: 1px solid #1a1a1e;
+}
+
+.tracker-item.expanded .tracker-item-row {
+  border-bottom-color: #2a2a2e;
+}
+
+/* --- Item Fields --- */
+.tracker-ref {
+  font-size: 11px;
+  font-weight: 500;
+  color: #4a9eff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tracker-item-title {
+  font-size: 11px;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 8px;
+}
+
+.tracker-assignee {
+  font-size: 10px;
+  color: #a080c0;
+  white-space: nowrap;
+}
+
+.tracker-age {
+  font-size: 10px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.tracker-age.stale-green { color: #23d18b; }
+.tracker-age.stale-yellow { color: #e8b830; }
+.tracker-age.stale-red { color: #f14c4c; font-weight: 700; }
+
+.tracker-status-age {
+  font-size: 10px;
+  text-align: right;
+}
+
+.tracker-status-age.stale-green { color: #23d18b66; }
+.tracker-status-age.stale-yellow { color: #e8b83088; }
+.tracker-status-age.stale-red { color: #f14c4c; }
+
+/* Stale item row highlight */
+.tracker-item.stale-row {
+  background: rgba(241, 76, 76, 0.06);
+  border-left: 2px solid #f14c4c44;
+}
+
+.tracker-item.stale-row .tracker-item-row {
+  border-bottom-color: rgba(241, 76, 76, 0.1);
+}
+
+/* --- Severity Badges --- */
+.tracker-severity {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.tracker-severity.sev-normal {
+  color: #666;
+  background: transparent;
+}
+
+.tracker-severity.sev-high {
+  color: #e8b830;
+  background: rgba(232, 184, 48, 0.12);
+  border: 1px solid rgba(232, 184, 48, 0.2);
+}
+
+.tracker-severity.sev-critical {
+  color: #f14c4c;
+  background: rgba(241, 76, 76, 0.12);
+  border: 1px solid rgba(241, 76, 76, 0.2);
+  animation: pulse-critical 2s ease-in-out infinite;
+}
+
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* --- Labels --- */
+.tracker-label {
+  display: inline-block;
+  font-size: 8px;
+  color: #888;
+  background: #252528;
+  padding: 1px 5px;
+  border-radius: 2px;
+  margin-left: 4px;
+}
+
+/* --- Expand Detail --- */
+.tracker-item-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease-out, padding 0.2s ease-out;
+  padding: 0 16px 0 16px;
+  background: #151518;
+  border-bottom: 1px solid #1e1e22;
+}
+
+.tracker-item.expanded .tracker-item-detail {
+  max-height: 400px;
+  padding: 10px 16px 12px 16px;
+}
+
+.tracker-detail-section {
+  margin-bottom: 8px;
+}
+
+.tracker-detail-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #555;
+  margin-bottom: 2px;
+}
+
+.tracker-detail-value {
+  font-size: 11px;
+  color: #999;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tracker-detail-meta {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #222;
+  font-size: 9px;
+  color: #444;
+}
+
+.tracker-detail-meta span { color: #666; }
+
+.tracker-blocker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #f14c4c;
+  background: rgba(241, 76, 76, 0.08);
+  border: 1px solid rgba(241, 76, 76, 0.15);
+  padding: 2px 8px;
+  border-radius: 2px;
+  margin-bottom: 8px;
+}
+
+.tracker-blocker-badge::before {
+  content: "\u26a0";
+  font-size: 9px;
+}
+
+/* --- History Timeline --- */
+.tracker-timeline {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #222;
+}
+
+.tracker-timeline-title {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.tracker-timeline-entry {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.tracker-timeline-date {
+  color: #555;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 80px;
+}
+
+.tracker-timeline-who {
+  color: #a080c0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tracker-timeline-what {
+  color: #999;
+}
+
+.tracker-timeline-what .tl-arrow { color: #d4882a; }
+.tracker-timeline-what .tl-comment { color: #777; font-style: italic; }
+
+.tracker-timeline-loading {
+  font-size: 10px;
+  color: #555;
+  padding: 4px 0;
+}
+
+/* --- Show Closed Toggle --- */
+.tracker-show-closed {
+  font-size: 9px;
+  color: #555;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.tracker-show-closed input { cursor: pointer; accent-color: #d4882a; }
+
+.tracker-refresh-btn {
+  background: none;
+  border: 1px solid #333;
+  color: #666;
+  font-size: 13px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+.tracker-refresh-btn:hover { color: #d4882a; border-color: #d4882a; }
+
+/* --- Closed/Merged/Deferred Groups (header only dimmed) --- */
+
+.tracker-group[data-status="closed"] .tracker-group-dot { background: #444; }
+.tracker-group[data-status="closed"] .tracker-group-name { color: #444; }
+.tracker-group[data-status="merged"] .tracker-group-dot { background: #23d18b55; }
+.tracker-group[data-status="merged"] .tracker-group-name { color: #3a6a50; }
+
+/* Separator before closed sections */
+.tracker-group[data-status="closed"]:first-of-type,
+.tracker-group[data-status="merged"]:first-of-type,
+.tracker-group[data-status="deferred"]:first-of-type {
+  border-top: 2px solid #333;
+  margin-top: 4px;
+}
+
+/* Strikethrough + dimming for closed/merged/deferred items (on item, not group) */
+.tracker-item-done {
+  opacity: 0.35;
+}
+
+.tracker-item-done .tracker-item-row {
+  background: #0a0a0c;
+}
+
+.tracker-item-done .tracker-item-title {
+  text-decoration: line-through;
+  text-decoration-color: #55555588;
+}
+
+.tracker-closed-badge {
+  display: inline-block;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-left: 6px;
+}
+
+.tracker-closed-badge.badge-closed { color: #666; background: #333; }
+.tracker-closed-badge.badge-merged { color: #23d18b99; background: rgba(35, 209, 139, 0.1); }
+.tracker-closed-badge.badge-deferred { color: #888; background: #2a2a2e; }
+
+/* --- Empty State --- */
+.tracker-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: 12px;
+  color: #444;
+  letter-spacing: 1px;
+}
+
+/* --- Connection Failed --- */
+.tracker-error {
+  color: #f14c4c;
+  text-align: center;
+  padding: 40px;
+  font-size: 11px;
+}
