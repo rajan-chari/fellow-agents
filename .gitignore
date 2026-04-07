@@ -1,6 +1,10 @@
 node_modules/
-pty-win/node_modules/
-.claude/settings.local.json
 workspaces/*/.claude/
 *.log
 *.db
+
+# Downloaded by setup script from GitHub Releases
+bin/win-x64/
+bin/osx-arm64/
+bin/linux-x64/
+pty-win/
