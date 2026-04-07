@@ -1,5 +1,1 @@
-{
-  "name": "reviewer",
-  "description": "Reviewer agent — reviews code for quality and correctness",
-  "server": "http://127.0.0.1:8800"
-}
+{"name": "reviewer", "description": "Reviewer agent — reviews code for quality and correctness", "server": "http://127.0.0.1:8800"}
