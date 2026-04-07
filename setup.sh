@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 PTY_WIN_PORT="${1:-3700}"
 EMCOM_PORT="${2:-8800}"
+REPO="${FELLOW_AGENTS_REPO:-rajan-chari/fellow-agents}"
 
 echo ""
 echo "  fellow-agents setup"
@@ -35,16 +36,59 @@ echo "  Claude Code found"
 if ! command -v python3 &>/dev/null; then echo "Python 3.10+ required for emcom-server"; exit 1; fi
 echo "  $(python3 --version)"
 
-if [ ! -f "$BIN_DIR/emcom" ]; then echo "emcom binary not found at $BIN_DIR/emcom. Download from GitHub Releases."; exit 1; fi
-echo "  Binaries found ($PLATFORM)"
+# --- Download binaries if missing ---
+download_release() {
+  if [ -f "$BIN_DIR/emcom" ] && [ -d "$ROOT/pty-win" ]; then
+    echo "  Binaries already present — skipping download"
+    return
+  fi
+  echo "  Downloading binaries from GitHub Releases..."
+  if ! command -v curl &>/dev/null; then
+    echo "  curl required for download. Place binaries manually in bin/$PLATFORM/"
+    return
+  fi
+  RELEASE_JSON=$(curl -sf "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null) || {
+    echo "  Could not fetch releases from $REPO"
+    echo "  Place binaries manually in bin/$PLATFORM/ and pty-win/"
+    return
+  }
+  TAG=$(echo "$RELEASE_JSON" | grep '"tag_name"' | head -1 | sed 's/.*: "//;s/".*//')
+  echo "  Release: $TAG"
+
+  # Download platform binaries
+  BIN_URL=$(echo "$RELEASE_JSON" | grep '"browser_download_url"' | grep "$PLATFORM" | head -1 | sed 's/.*: "//;s/".*//')
+  if [ -n "$BIN_URL" ]; then
+    echo "  Downloading bin-$PLATFORM.zip..."
+    curl -sL "$BIN_URL" -o "$ROOT/bin-$PLATFORM.zip"
+    (cd "$ROOT" && unzip -qo "bin-$PLATFORM.zip" && rm "bin-$PLATFORM.zip")
+    chmod +x "$BIN_DIR"/* 2>/dev/null || true
+  else
+    echo "  No binary archive found for $PLATFORM"
+  fi
+
+  # Download pty-win
+  PTY_URL=$(echo "$RELEASE_JSON" | grep '"browser_download_url"' | grep "pty-win" | head -1 | sed 's/.*: "//;s/".*//')
+  if [ -n "$PTY_URL" ]; then
+    echo "  Downloading pty-win.zip..."
+    curl -sL "$PTY_URL" -o "$ROOT/pty-win.zip"
+    (cd "$ROOT" && unzip -qo "pty-win.zip" && rm "pty-win.zip")
+  else
+    echo "  No pty-win archive found"
+  fi
+}
+download_release
+
+if [ ! -f "$BIN_DIR/emcom" ]; then
+  echo "emcom binary not found at $BIN_DIR/emcom. Download from GitHub Releases."
+  exit 1
+fi
+echo "  Binaries ready ($PLATFORM)"
 
 # --- Install pty-win ---
 echo "[2/6] Installing pty-win..."
 if [ -d "$ROOT/pty-win" ]; then
-  cd "$ROOT/pty-win"
-  [ -d node_modules ] || npm install --production 2>&1 | tail -1
-  npm link 2>&1 | tail -1
-  cd "$ROOT"
+  (cd "$ROOT/pty-win" && [ -d node_modules ] || npm install --production 2>&1 | tail -1)
+  (cd "$ROOT/pty-win" && npm link 2>&1 | tail -1)
   echo "  pty-win ready"
 else
   echo "  pty-win/ not found — download from GitHub Releases"
