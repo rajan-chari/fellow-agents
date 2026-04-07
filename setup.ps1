@@ -8,13 +8,15 @@
 param(
     [int]$PtyWinPort = 3700,
     [int]$EmcomPort = 8800,
-    [switch]$SkipBrowser
+    [switch]$SkipBrowser,
+    [string]$Repo = "rajan-chari/fellow-agents"
 )
 
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 $BinDir = Join-Path $Root "bin" "win-x64"
 $WorkspacesDir = Join-Path $Root "workspaces"
+$PtyWinDir = Join-Path $Root "pty-win"
 
 Write-Host ""
 Write-Host "  fellow-agents setup" -ForegroundColor Cyan
@@ -44,14 +46,46 @@ if (-not $python) { Write-Error "Python 3.10+ is required for emcom-server. Inst
 $pyVer = python --version 2>&1
 Write-Host "  $pyVer" -ForegroundColor Green
 
-# Binaries
-if (-not (Test-Path (Join-Path $BinDir "emcom.exe"))) { Write-Error "emcom.exe not found in $BinDir. Download from GitHub Releases."; exit 1 }
-if (-not (Test-Path (Join-Path $BinDir "emcom-server.exe"))) { Write-Error "emcom-server.exe not found in $BinDir. Download from GitHub Releases."; exit 1 }
-Write-Host "  Binaries found" -ForegroundColor Green
+# --- Download binaries if missing ---
+function Download-Release {
+    if ((Test-Path (Join-Path $BinDir "emcom.exe")) -and (Test-Path $PtyWinDir)) {
+        Write-Host "  Binaries already present — skipping download" -ForegroundColor DarkGray
+        return
+    }
+    Write-Host "  Downloading binaries from GitHub Releases..." -ForegroundColor Yellow
+    try {
+        $release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest" -TimeoutSec 10
+        $tag = $release.tag_name
+        Write-Host "  Release: $tag" -ForegroundColor Green
+        foreach ($asset in $release.assets) {
+            $name = $asset.name
+            $url = $asset.browser_download_url
+            if ($name -match "win-x64") {
+                $dest = Join-Path $Root $name
+                Write-Host "  Downloading $name..." -ForegroundColor DarkGray
+                Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 120
+                Expand-Archive -Path $dest -DestinationPath $Root -Force
+                Remove-Item $dest
+            } elseif ($name -match "pty-win") {
+                $dest = Join-Path $Root $name
+                Write-Host "  Downloading $name..." -ForegroundColor DarkGray
+                Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 120
+                Expand-Archive -Path $dest -DestinationPath $Root -Force
+                Remove-Item $dest
+            }
+        }
+    } catch {
+        Write-Warning "  Could not download from GitHub Releases: $_"
+        Write-Warning "  Place binaries manually in $BinDir and pty-win/"
+    }
+}
+Download-Release
+
+if (-not (Test-Path (Join-Path $BinDir "emcom.exe"))) { Write-Error "emcom.exe not found in $BinDir. Download from GitHub Releases or place manually."; exit 1 }
+Write-Host "  Binaries ready" -ForegroundColor Green
 
 # --- Install pty-win ---
 Write-Host "[2/6] Installing pty-win..." -ForegroundColor Yellow
-$PtyWinDir = Join-Path $Root "pty-win"
 if (Test-Path $PtyWinDir) {
     Push-Location $PtyWinDir
     if (-not (Test-Path "node_modules")) { npm install --production 2>&1 | Out-Null }
