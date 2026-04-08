@@ -5,16 +5,17 @@ Multiple Claude Code agents collaborating via messaging. Clone, setup, go.
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+
-- [Claude Code](https://claude.ai/code)
 - [Python](https://python.org/) 3.10+ (for emcom-server)
+- [Claude Code](https://claude.ai/code) (optional for setup, required to run agents)
+- **Windows only:** [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`winget install Microsoft.PowerShell` or `choco install powershell-core`)
 
 ## Setup
 
 ```powershell
 git clone https://github.com/rajan-chari/fellow-agents.git
 cd fellow-agents
-./setup.ps1          # Windows
-# ./setup.sh         # Mac/Linux (coming soon)
+pwsh ./setup.ps1     # Windows (requires PowerShell 7+)
+./setup.sh           # Mac/Linux
 ```
 
 Starts emcom-server + pty-win, registers 3 agents, opens browser.

@@ -12,6 +12,12 @@ param(
     [string]$Repo = "rajan-chari/fellow-agents"
 )
 
+# Require PowerShell 7+
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Error "PowerShell 7+ required. Install: winget install Microsoft.PowerShell`nThen run: pwsh ./setup.ps1"
+    exit 1
+}
+
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 $BinDir = Join-Path $Root "bin" "win-x64"
