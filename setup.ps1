@@ -132,15 +132,17 @@ foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     $claudeDir = Join-Path $ws.FullName ".claude"
     if (-not (Test-Path $claudeDir)) { New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null }
     $settingsPath = Join-Path $claudeDir "settings.local.json"
-    $settings = @{
-        hooks = @{
-            Stop = @(@{ matcher = ""; hooks = @(@{ type = "http"; url = "http://127.0.0.1:$PtyWinPort/api/hook/stop"; timeout = 2 }) })
-            Notification = @(@{ matcher = "idle_prompt|permission_prompt"; hooks = @(@{ type = "http"; url = "http://127.0.0.1:$PtyWinPort/api/hook/notify"; timeout = 2 }) })
-            UserPromptSubmit = @(@{ matcher = ""; hooks = @(@{ type = "http"; url = "http://127.0.0.1:$PtyWinPort/api/hook/prompt-submit"; timeout = 2 }) })
-        }
-        messageIdleNotifThresholdMs = 5000
-    }
-    $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+    $json = @"
+{
+  "hooks": {
+    "Stop": [{"matcher": "", "hooks": [{"type": "http", "url": "http://127.0.0.1:$PtyWinPort/api/hook/stop", "timeout": 2}]}],
+    "Notification": [{"matcher": "idle_prompt|permission_prompt", "hooks": [{"type": "http", "url": "http://127.0.0.1:$PtyWinPort/api/hook/notify", "timeout": 2}]}],
+    "UserPromptSubmit": [{"matcher": "", "hooks": [{"type": "http", "url": "http://127.0.0.1:$PtyWinPort/api/hook/prompt-submit", "timeout": 2}]}]
+  },
+  "messageIdleNotifThresholdMs": 5000
+}
+"@
+    Set-Content $settingsPath $json -Encoding UTF8
     Write-Host "  Hooks configured: $($ws.Name)" -ForegroundColor Green
 }
 
