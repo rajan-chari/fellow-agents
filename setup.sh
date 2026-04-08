@@ -30,8 +30,8 @@ NODE_VER=$(node --version | tr -d 'v' | cut -d. -f1)
 if [ "$NODE_VER" -lt 18 ]; then echo "Node.js 18+ required (found $(node --version))"; exit 1; fi
 echo "  Node.js $(node --version)"
 
-if ! command -v claude &>/dev/null; then echo "Claude Code is required. Install from https://claude.ai/code"; exit 1; fi
-echo "  Claude Code found"
+if ! command -v claude &>/dev/null; then echo "  Claude Code not found (optional — install from https://claude.ai/code)"
+else echo "  Claude Code found"; fi
 
 if ! command -v python3 &>/dev/null; then echo "Python 3.10+ required for emcom-server"; exit 1; fi
 echo "  $(python3 --version)"
