@@ -88,7 +88,7 @@ echo "  Binaries ready ($PLATFORM)"
 echo "[2/6] Installing pty-win..."
 if [ -d "$ROOT/pty-win" ]; then
   (cd "$ROOT/pty-win" && [ -d node_modules ] || npm install --production 2>&1 | tail -1)
-  (cd "$ROOT/pty-win" && npm link 2>&1 | tail -1)
+  (cd "$ROOT/pty-win" && sudo npm link 2>&1 | tail -1)
   echo "  pty-win ready"
 else
   echo "  pty-win/ not found — download from GitHub Releases"
