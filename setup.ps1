@@ -36,8 +36,8 @@ Write-Host "  Node.js $nodeVer" -ForegroundColor Green
 
 # Claude Code
 $claude = Get-Command "claude" -ErrorAction SilentlyContinue
-if (-not $claude) { Write-Error "Claude Code is required. Install from https://claude.ai/code"; exit 1 }
-Write-Host "  Claude Code found" -ForegroundColor Green
+if (-not $claude) { Write-Host "  Claude Code not found (optional — install from https://claude.ai/code)" -ForegroundColor Yellow }
+else { Write-Host "  Claude Code found" -ForegroundColor Green }
 
 # Python (for emcom-server)
 $python = Get-Command "python" -ErrorAction SilentlyContinue
