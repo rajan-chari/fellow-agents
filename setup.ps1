@@ -154,14 +154,14 @@ foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
 
 # --- Start pty-win ---
 Write-Host "[6/6] Starting pty-win..." -ForegroundColor Yellow
-$ptyCmd = Get-Command "pty-win" -ErrorAction SilentlyContinue
-if ($ptyCmd) {
-    $ptyProc = Start-Process -FilePath "pty-win" -ArgumentList @(
-        "--port", $PtyWinPort, "--root", $WorkspacesDir, "--emcom", "http://127.0.0.1:$EmcomPort"
+$ptyWinMain = Join-Path $PtyWinDir "dist" "index.js"
+if (Test-Path $ptyWinMain) {
+    $ptyProc = Start-Process -FilePath "node" -ArgumentList @(
+        $ptyWinMain, "--port", $PtyWinPort, "--root", $WorkspacesDir, "--emcom", "http://127.0.0.1:$EmcomPort"
     ) -PassThru -WindowStyle Hidden
     Write-Host "  pty-win running on :$PtyWinPort" -ForegroundColor Green
 } else {
-    Write-Warning "  pty-win not found in PATH — run 'npm link' in pty-win/"
+    Write-Warning "  pty-win dist not found — run 'npm run build' in pty-win/"
 }
 
 # --- Open browser ---

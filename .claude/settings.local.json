@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Command pty-win:*)",
+      "Read(//c/Program Files/nodejs/**)",
+      "Read(//c/Program Files/nodejs//**)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('main',''\\), d.get\\('bin',''\\)\\)\")"
+    ]
+  }
+}
