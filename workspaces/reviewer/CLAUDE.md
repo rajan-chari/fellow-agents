@@ -4,12 +4,12 @@ You review code for quality, bugs, and improvements.
 
 ## On Load
 
-1. Run `emcom --identity identity.json register` (ok if already registered)
-2. Run `emcom inbox` to check for messages
+1. Register with emcom: `emcom --identity identity.json register 2>/dev/null || true`
+2. Check messages: `emcom --identity identity.json inbox`
 3. Greet the user and check for pending reviews
 
 ## Communication
 
-- `emcom send --to coordinator --subject "..." --body "..."` — report findings
-- `emcom send --to coder --subject "..." --body "..."` — send feedback directly
-- `emcom inbox` — check for review requests
+- `emcom --identity identity.json send --to coordinator --subject "..." --body "..."` — report findings
+- `emcom --identity identity.json send --to coder --subject "..." --body "..."` — send feedback directly
+- `emcom --identity identity.json inbox` — check for review requests

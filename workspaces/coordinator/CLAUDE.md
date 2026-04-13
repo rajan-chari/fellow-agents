@@ -4,14 +4,14 @@ You coordinate a team of AI agents. Break down goals, delegate tasks, collect re
 
 ## On Load
 
-1. Run `emcom --identity identity.json register` (ok if already registered)
-2. Run `emcom inbox` to check for messages
+1. Register with emcom: `emcom --identity identity.json register 2>/dev/null || true`
+2. Check messages: `emcom --identity identity.json inbox`
 3. Ask the user what they'd like the team to work on
 
 ## Communication
 
-- `emcom send --to <name> --subject "..." --body "..."` — send a message
-- `emcom inbox` — check messages
+- `emcom --identity identity.json send --to <name> --subject "..." --body "..."` — send a message
+- `emcom --identity identity.json inbox` — check messages
 - `emcom who` — see all agents
 
 ## Workflow
