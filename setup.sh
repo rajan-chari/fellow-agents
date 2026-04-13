@@ -105,6 +105,7 @@ echo "[2/6] Installing pty-win..."
 if [ -d "$ROOT/pty-win" ]; then
   (cd "$ROOT/pty-win" && [ -d node_modules ] || npm install --production 2>&1 | tail -1)
   (cd "$ROOT/pty-win" && sudo npm link 2>&1 | tail -1)
+  sudo chmod +x "$(command -v pty-win 2>/dev/null)" 2>/dev/null || true
   echo "  pty-win ready"
 else
   echo "  pty-win/ not found — download from GitHub Releases"
