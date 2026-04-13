@@ -89,6 +89,8 @@ function Download-Release {
             Expand-Archive -Path $dest -DestinationPath $Root -Force
             Remove-Item $dest
         } elseif ($name -match "pty-win") {
+            $nodeModules = Join-Path $PtyWinDir "node_modules"
+            if (Test-Path $nodeModules) { Remove-Item $nodeModules -Recurse -Force }
             $dest = Join-Path $Root $name
             Write-Host "  Downloading $name..." -ForegroundColor DarkGray
             Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 120

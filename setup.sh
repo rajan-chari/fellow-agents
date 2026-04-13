@@ -82,6 +82,7 @@ download_release() {
   PTY_URL=$(echo "$RELEASE_JSON" | grep '"browser_download_url"' | grep "pty-win" | head -1 | sed 's/.*: "//;s/".*//')
   if [ -n "$PTY_URL" ]; then
     echo "  Downloading pty-win.zip..."
+    rm -rf "$ROOT/pty-win/node_modules" 2>/dev/null || true
     curl -sL "$PTY_URL" -o "$ROOT/pty-win.zip"
     (cd "$ROOT" && unzip -qo "pty-win.zip" && rm "pty-win.zip")
   else
