@@ -1,0 +1,37 @@
+name: E2E Setup Test
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run E2E test
+        run: |
+          chmod +x test-e2e.sh setup.sh
+          ./test-e2e.sh
+
+  test-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and run test container
+        run: |
+          docker build -f Dockerfile.test -t fellow-agents-test .
+          docker run --rm fellow-agents-test
