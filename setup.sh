@@ -38,22 +38,34 @@ echo "  $(python3 --version)"
 
 # --- Download binaries if missing ---
 download_release() {
-  if [ -f "$BIN_DIR/emcom" ] && [ -d "$ROOT/pty-win" ]; then
-    echo "  Binaries already present — skipping download"
-    return
-  fi
-  echo "  Downloading binaries from GitHub Releases..."
   if ! command -v curl &>/dev/null; then
     echo "  curl required for download. Place binaries manually in bin/$PLATFORM/"
     return
   fi
+
+  # Fetch latest release info
   RELEASE_JSON=$(curl -sf "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null) || {
     echo "  Could not fetch releases from $REPO"
+    if [ -f "$BIN_DIR/emcom" ] && [ -d "$ROOT/pty-win" ]; then
+      echo "  Using existing binaries"
+      return
+    fi
     echo "  Place binaries manually in bin/$PLATFORM/ and pty-win/"
     return
   }
   TAG=$(echo "$RELEASE_JSON" | grep '"tag_name"' | head -1 | sed 's/.*: "//;s/".*//')
-  echo "  Release: $TAG"
+
+  # Check if already up to date
+  VERSION_FILE="$ROOT/bin/.version"
+  if [ -f "$VERSION_FILE" ] && [ -f "$BIN_DIR/emcom" ] && [ -d "$ROOT/pty-win" ]; then
+    LOCAL_VER=$(cat "$VERSION_FILE")
+    if [ "$LOCAL_VER" = "$TAG" ]; then
+      echo "  Binaries up to date ($TAG)"
+      return
+    fi
+    echo "  Update available: $LOCAL_VER → $TAG"
+  fi
+  echo "  Downloading release $TAG..."
 
   # Download platform binaries
   BIN_URL=$(echo "$RELEASE_JSON" | grep '"browser_download_url"' | grep "$PLATFORM" | head -1 | sed 's/.*: "//;s/".*//')
@@ -75,6 +87,10 @@ download_release() {
   else
     echo "  No pty-win archive found"
   fi
+
+  # Save version
+  mkdir -p "$ROOT/bin"
+  echo "$TAG" > "$VERSION_FILE"
 }
 download_release
 

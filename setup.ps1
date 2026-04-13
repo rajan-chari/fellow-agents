@@ -54,36 +54,53 @@ Write-Host "  $pyVer" -ForegroundColor Green
 
 # --- Download binaries if missing ---
 function Download-Release {
-    if ((Test-Path (Join-Path $BinDir "emcom.exe")) -and (Test-Path $PtyWinDir)) {
-        Write-Host "  Binaries already present — skipping download" -ForegroundColor DarkGray
-        return
-    }
-    Write-Host "  Downloading binaries from GitHub Releases..." -ForegroundColor Yellow
+    $VersionFile = Join-Path $Root "bin" ".version"
     try {
         $release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest" -TimeoutSec 10
         $tag = $release.tag_name
-        Write-Host "  Release: $tag" -ForegroundColor Green
-        foreach ($asset in $release.assets) {
-            $name = $asset.name
-            $url = $asset.browser_download_url
-            if ($name -match "win-x64") {
-                $dest = Join-Path $Root $name
-                Write-Host "  Downloading $name..." -ForegroundColor DarkGray
-                Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 120
-                Expand-Archive -Path $dest -DestinationPath $Root -Force
-                Remove-Item $dest
-            } elseif ($name -match "pty-win") {
-                $dest = Join-Path $Root $name
-                Write-Host "  Downloading $name..." -ForegroundColor DarkGray
-                Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 120
-                Expand-Archive -Path $dest -DestinationPath $Root -Force
-                Remove-Item $dest
-            }
-        }
     } catch {
-        Write-Warning "  Could not download from GitHub Releases: $_"
+        Write-Warning "  Could not fetch releases from $Repo"
+        if ((Test-Path (Join-Path $BinDir "emcom.exe")) -and (Test-Path $PtyWinDir)) {
+            Write-Host "  Using existing binaries" -ForegroundColor DarkGray
+            return
+        }
         Write-Warning "  Place binaries manually in $BinDir and pty-win/"
+        return
     }
+
+    # Check if already up to date
+    if ((Test-Path $VersionFile) -and (Test-Path (Join-Path $BinDir "emcom.exe")) -and (Test-Path $PtyWinDir)) {
+        $localVer = Get-Content $VersionFile -Raw | ForEach-Object { $_.Trim() }
+        if ($localVer -eq $tag) {
+            Write-Host "  Binaries up to date ($tag)" -ForegroundColor DarkGray
+            return
+        }
+        Write-Host "  Update available: $localVer → $tag" -ForegroundColor Yellow
+    }
+    Write-Host "  Downloading release $tag..." -ForegroundColor Yellow
+
+    foreach ($asset in $release.assets) {
+        $name = $asset.name
+        $url = $asset.browser_download_url
+        if ($name -match "win-x64") {
+            $dest = Join-Path $Root $name
+            Write-Host "  Downloading $name..." -ForegroundColor DarkGray
+            Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 120
+            Expand-Archive -Path $dest -DestinationPath $Root -Force
+            Remove-Item $dest
+        } elseif ($name -match "pty-win") {
+            $dest = Join-Path $Root $name
+            Write-Host "  Downloading $name..." -ForegroundColor DarkGray
+            Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 120
+            Expand-Archive -Path $dest -DestinationPath $Root -Force
+            Remove-Item $dest
+        }
+    }
+
+    # Save version
+    $binParent = Join-Path $Root "bin"
+    if (-not (Test-Path $binParent)) { New-Item -ItemType Directory -Path $binParent -Force | Out-Null }
+    Set-Content $VersionFile $tag -Encoding UTF8
 }
 Download-Release
 
