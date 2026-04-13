@@ -99,6 +99,12 @@ if [ ! -f "$BIN_DIR/emcom" ]; then
   echo "emcom binary not found at $BIN_DIR/emcom. Download from GitHub Releases."
   exit 1
 fi
+# Symlink binaries into PATH so agents can find them
+for bin in emcom emcom-server tracker; do
+  if [ -f "$BIN_DIR/$bin" ]; then
+    sudo ln -sf "$BIN_DIR/$bin" "/usr/local/bin/$bin"
+  fi
+done
 echo "  Binaries ready ($PLATFORM)"
 
 # --- Install pty-win ---

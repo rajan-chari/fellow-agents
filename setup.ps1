@@ -107,6 +107,14 @@ function Download-Release {
 Download-Release
 
 if (-not (Test-Path (Join-Path $BinDir "emcom.exe"))) { Write-Error "emcom.exe not found in $BinDir. Download from GitHub Releases or place manually."; exit 1 }
+
+# Add bin dir to user PATH so agents can find emcom/tracker
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($userPath -notlike "*$BinDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$userPath;$BinDir", "User")
+    $env:Path = "$env:Path;$BinDir"
+    Write-Host "  Added $BinDir to user PATH" -ForegroundColor Green
+}
 Write-Host "  Binaries ready" -ForegroundColor Green
 
 # --- Install pty-win ---
