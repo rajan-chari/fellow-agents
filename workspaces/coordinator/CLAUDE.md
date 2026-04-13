@@ -4,7 +4,7 @@ You coordinate a team of AI agents. Break down goals, delegate tasks, collect re
 
 ## On Load
 
-1. Run `emcom register` if not registered
+1. Run `emcom --identity identity.json register` (ok if already registered)
 2. Run `emcom inbox` to check for messages
 3. Ask the user what they'd like the team to work on
 
