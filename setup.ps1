@@ -151,7 +151,7 @@ foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     $idFile = Join-Path $ws.FullName "identity.json"
     if (Test-Path $idFile) {
         try {
-            & $Emcom --identity $idFile register 2>$null
+            & $Emcom --identity $idFile register --force 2>$null
             Write-Host "  Registered: $($ws.Name)" -ForegroundColor Green
         } catch {
             Write-Host "  Already registered: $($ws.Name)" -ForegroundColor DarkGray

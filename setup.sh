@@ -143,7 +143,7 @@ for ws in "$ROOT/workspaces"/*/; do
   name=$(basename "$ws")
   id_file="$ws/identity.json"
   if [ -f "$id_file" ]; then
-    "$EMCOM" --identity "$id_file" register 2>/dev/null && echo "  Registered: $name" || echo "  Already registered: $name"
+    "$EMCOM" --identity "$id_file" register --force 2>/dev/null && echo "  Registered: $name" || echo "  Warning: failed to register $name"
   fi
 done
 
