@@ -6,6 +6,13 @@ PTY_WIN_PORT="${1:-3700}"
 EMCOM_PORT="${2:-8800}"
 REPO="${FELLOW_AGENTS_REPO:-rajan-chari/fellow-agents}"
 
+# Use sudo only when not already root
+if [ "$(id -u)" -eq 0 ]; then
+  SUDO=""
+else
+  SUDO="sudo"
+fi
+
 echo ""
 echo "  fellow-agents setup"
 echo "  ==================="
@@ -102,7 +109,7 @@ fi
 # Symlink binaries into PATH so agents can find them
 for bin in emcom emcom-server tracker; do
   if [ -f "$BIN_DIR/$bin" ]; then
-    sudo ln -sf "$BIN_DIR/$bin" "/usr/local/bin/$bin"
+    $SUDO ln -sf "$BIN_DIR/$bin" "/usr/local/bin/$bin"
   fi
 done
 echo "  Binaries ready ($PLATFORM)"
@@ -111,8 +118,8 @@ echo "  Binaries ready ($PLATFORM)"
 echo "[2/6] Installing pty-win..."
 if [ -d "$ROOT/pty-win" ]; then
   (cd "$ROOT/pty-win" && [ -d node_modules ] || npm install --production 2>&1 | tail -1)
-  (cd "$ROOT/pty-win" && sudo npm link 2>&1 | tail -1)
-  sudo chmod +x "$(command -v pty-win 2>/dev/null)" 2>/dev/null || true
+  (cd "$ROOT/pty-win" && $SUDO npm link 2>&1 | tail -1)
+  $SUDO chmod +x "$(command -v pty-win 2>/dev/null)" 2>/dev/null || true
   echo "  pty-win ready"
 else
   echo "  pty-win/ not found — download from GitHub Releases"
@@ -139,7 +146,7 @@ echo "  emcom-server running on :$EMCOM_PORT"
 # --- Register workspaces ---
 echo "[4/6] Registering agents..."
 EMCOM="$BIN_DIR/emcom"
-for ws in "$ROOT/workspaces"/*/; do
+for ws in "$ROOT/templates"/*/; do
   name=$(basename "$ws")
   id_file="$ws/identity.json"
   if [ -f "$id_file" ]; then
@@ -149,7 +156,7 @@ done
 
 # --- Configure hooks ---
 echo "[5/6] Configuring Claude Code hooks..."
-for ws in "$ROOT/workspaces"/*/; do
+for ws in "$ROOT/templates"/*/; do
   name=$(basename "$ws")
   claude_dir="$ws/.claude"
   mkdir -p "$claude_dir"
@@ -169,7 +176,7 @@ done
 # --- Start pty-win ---
 echo "[6/6] Starting pty-win..."
 if command -v pty-win &>/dev/null; then
-  pty-win --port "$PTY_WIN_PORT" --root "$ROOT/workspaces" --emcom "http://127.0.0.1:$EMCOM_PORT" &
+  pty-win --port "$PTY_WIN_PORT" --root "$ROOT/templates" --emcom "http://127.0.0.1:$EMCOM_PORT" &
   PTY_PID=$!
   echo "  pty-win running on :$PTY_WIN_PORT"
 else
@@ -188,6 +195,18 @@ echo "  Setup complete!"
 echo "  pty-win:      http://127.0.0.1:$PTY_WIN_PORT"
 echo "  emcom-server: http://127.0.0.1:$EMCOM_PORT"
 echo ""
+if [ -n "$SUDO" ]; then
+  echo "  Note: sudo was used for two things:"
+  echo "    1. Symlink emcom/emcom-server/tracker binaries into /usr/local/bin"
+  echo "       (so agents can find them in PATH)"
+  echo "    2. npm link pty-win globally"
+  echo "       (so 'pty-win' command works from anywhere)"
+  echo ""
+  echo "  To avoid sudo, add bin/$PLATFORM to your PATH and run pty-win directly:"
+  echo "    export PATH=\"$BIN_DIR:\$PATH\""
+  echo "    node $ROOT/pty-win/server.js --port $PTY_WIN_PORT --root $ROOT/workspaces --emcom http://127.0.0.1:$EMCOM_PORT"
+  echo ""
+fi
 echo "  Press Ctrl+C to stop all services."
 echo ""
 

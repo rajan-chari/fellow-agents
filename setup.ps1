@@ -21,7 +21,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 $BinDir = Join-Path $Root "bin" "win-x64"
-$WorkspacesDir = Join-Path $Root "workspaces"
+$WorkspacesDir = Join-Path $Root "templates"
 $PtyWinDir = Join-Path $Root "pty-win"
 
 Write-Host ""
