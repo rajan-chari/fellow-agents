@@ -1,4 +1,6 @@
 import { spawn } from "child_process";
+import http from "http";
+import https from "https";
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "fs";
 import { join } from "path";
 import { pidDir, binDir, ptyWinDir } from "./paths.js";
@@ -32,7 +34,7 @@ function isRunning(pid: number): boolean {
 
 export function startEmcomServer(emcomPort: number, env: NodeJS.ProcessEnv): number {
   const bin = join(binDir, `emcom-server${binarySuffix()}`);
-  const proc = spawn(bin, [], {
+  const proc = spawn(bin, ["--port", String(emcomPort)], {
     env: { ...env, EMCOM_PORT: String(emcomPort) },
     detached: true,
     stdio: "ignore",
@@ -72,13 +74,12 @@ export function stopAll(): void {
 }
 
 export function waitForHealth(url: string, timeoutMs: number = 30000): Promise<boolean> {
-  const { get } = require("https").request ? require("https") : require("http");
-  const start = Date.now();
+  const mod = url.startsWith("https") ? https : http;
+  const startTime = Date.now();
   return new Promise((resolve) => {
     const check = () => {
-      if (Date.now() - start > timeoutMs) return resolve(false);
-      const mod = url.startsWith("https") ? require("https") : require("http");
-      mod.get(url, (res: any) => {
+      if (Date.now() - startTime > timeoutMs) return resolve(false);
+      mod.get(url, (res) => {
         resolve(res.statusCode === 200);
       }).on("error", () => {
         setTimeout(check, 500);

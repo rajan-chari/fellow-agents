@@ -1,4 +1,5 @@
 import { existsSync } from "fs";
+import http from "http";
 import { join, resolve } from "path";
 import { execSync } from "child_process";
 import { binDir, ptyWinDir } from "../lib/paths.js";
@@ -80,22 +81,26 @@ export async function start(opts: StartOptions): Promise<void> {
   console.log(`  emcom-server started (pid ${emcomPid})`);
 
   // Wait for health
-  await new Promise<void>((resolve) => {
+  const healthy = await new Promise<boolean>((resolve) => {
     let attempts = 0;
     const check = () => {
-      const http = require("http");
-      http.get(`${emcomUrl}/api/health`, (res: any) => {
-        if (res.statusCode === 200) return resolve();
+      http.get(`${emcomUrl}/api/health`, (res) => {
+        if (res.statusCode === 200) return resolve(true);
         if (++attempts < 20) setTimeout(check, 500);
-        else resolve();
+        else resolve(false);
       }).on("error", () => {
         if (++attempts < 20) setTimeout(check, 500);
-        else resolve();
+        else resolve(false);
       });
     };
     check();
   });
-  console.log(`  emcom-server running on :${opts.emcomPort}`);
+  if (healthy) {
+    console.log(`  emcom-server running on :${opts.emcomPort}`);
+  } else {
+    console.error(`  Warning: emcom-server health check failed — it may not be running`);
+    console.error(`  Check if port ${opts.emcomPort} is already in use`);
+  }
 
   // 6. Register agents
   console.log("[6/7] Registering agents + configuring hooks...");
