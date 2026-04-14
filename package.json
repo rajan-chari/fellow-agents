@@ -4,7 +4,12 @@
   "description": "Multi-agent system — multiple Claude Code instances collaborating via messaging",
   "type": "module",
   "bin": {
-    "fellow-agents": "dist/cli.js"
+    "fellow-agents": "dist/cli.js",
+    "emcom": "dist/shims/emcom.js",
+    "emcom-server": "dist/shims/emcom-server.js",
+    "tracker": "dist/shims/tracker.js",
+    "pty-win": "dist/shims/pty-win.js",
+    "pty-cld": "dist/shims/pty-cld.js"
   },
   "files": [
     "dist/",
