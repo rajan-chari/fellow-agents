@@ -27,7 +27,7 @@ jobs:
             rid: osx-arm64
             suffix: ''
             platform: osx-arm64
-          - os: ubuntu-latest
+          - os: ubuntu-22.04    # glibc 2.35 — works on bookworm+ and Ubuntu 22.04+
             rid: linux-x64
             suffix: ''
             platform: linux-x64
