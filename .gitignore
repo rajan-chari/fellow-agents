@@ -8,3 +8,4 @@ workspaces/
 # Downloaded by setup script from GitHub Releases
 bin/
 pty-win/
+*.tgz

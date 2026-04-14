@@ -59,7 +59,7 @@ jobs:
         run: |
           pip install pyinstaller
           pip install "emcom/"
-          pyinstaller --onefile --name "emcom-server${{ matrix.suffix }}" emcom/emcom_server/main.py
+          pyinstaller --onefile --name "emcom-server${{ matrix.suffix }}" --runtime-tmpdir "~/.emcom/runtime" emcom/emcom_server/main.py
 
       - name: Assemble bin directory
         shell: bash
