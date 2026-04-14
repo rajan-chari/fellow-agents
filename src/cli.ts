@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
 const args = process.argv.slice(2);
-const command = args[0] || "start";
+
+// Default to "start" if no command given or first arg is a flag
+const command = args[0] === "stop" ? "stop"
+  : (args[0] === "--help" || args[0] === "-h") ? "help"
+  : "start";
 
 function getFlag(name: string, fallback: string): string {
   const idx = args.indexOf(name);
@@ -24,14 +28,14 @@ if (command === "start") {
 } else if (command === "stop") {
   const { stop } = await import("./commands/stop.js");
   stop();
-} else if (command === "--help" || command === "-h") {
+} else {
   console.log(`fellow-agents — multi-agent system for Claude Code
 
 Usage:
-  fellow-agents start [options]    Start services (download binaries on first run)
-  fellow-agents stop               Stop all running services
+  fellow-agents [options]            Start services (default)
+  fellow-agents stop                 Stop all running services
 
-Options (start):
+Options:
   --port <number>       pty-win port (default: 3700)
   --emcom-port <number> emcom-server port (default: 8800)
   --dir <path>          Working directory (default: current)
@@ -39,7 +43,4 @@ Options (start):
   --update              Force re-download binaries
 
   -h, --help            Show this help`);
-} else {
-  console.error(`Unknown command: ${command}. Run 'fellow-agents --help' for usage.`);
-  process.exit(1);
 }

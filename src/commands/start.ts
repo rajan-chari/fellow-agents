@@ -22,7 +22,14 @@ export async function start(opts: StartOptions): Promise<void> {
   console.log("  =============");
   console.log("");
 
-  const workDir = resolve(opts.dir);
+  // Auto-create fellow-agents/ subdirectory if CWD doesn't already have workspaces/
+  let workDir = resolve(opts.dir);
+  if (!existsSync(join(workDir, "workspaces"))) {
+    workDir = join(workDir, "fellow-agents");
+    const { mkdirSync } = await import("fs");
+    mkdirSync(workDir, { recursive: true });
+    console.log(`  Working directory: ${workDir}`);
+  }
   const workspacesDir = join(workDir, "workspaces");
   const emcomUrl = `http://127.0.0.1:${opts.emcomPort}`;
 
