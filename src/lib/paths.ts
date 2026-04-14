@@ -17,6 +17,9 @@ export const ptyWinDir = join(dataDir, "pty-win");
 /** ~/.fellow-agents/pid/ */
 export const pidDir = join(dataDir, "pid");
 
+/** ~/.fellow-agents/logs/ */
+export const logsDir = join(dataDir, "logs");
+
 /** ~/.fellow-agents/bin/.version */
 export const versionFile = join(dataDir, "bin", ".version");
 

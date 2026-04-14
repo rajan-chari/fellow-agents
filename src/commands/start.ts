@@ -2,9 +2,9 @@ import { existsSync } from "fs";
 import http from "http";
 import { join, resolve } from "path";
 import { execSync } from "child_process";
-import { binDir, ptyWinDir } from "../lib/paths.js";
+import { binDir, ptyWinDir, logsDir } from "../lib/paths.js";
 import { downloadBinaries } from "../lib/download.js";
-import { startEmcomServer, startPtyWin, stopAll } from "../lib/services.js";
+import { startEmcomServer, startPtyWin, stopAll, logPath } from "../lib/services.js";
 import { scaffoldWorkspaces, registerAgents, writeHooks } from "../lib/workspaces.js";
 import { binarySuffix } from "../lib/platform.js";
 
@@ -99,7 +99,7 @@ export async function start(opts: StartOptions): Promise<void> {
     console.log(`  emcom-server running on :${opts.emcomPort}`);
   } else {
     console.error(`  Warning: emcom-server health check failed — it may not be running`);
-    console.error(`  Check if port ${opts.emcomPort} is already in use`);
+    console.error(`  Check logs: ${logPath("emcom-server")}`);
   }
 
   // 6. Register agents
@@ -128,6 +128,7 @@ export async function start(opts: StartOptions): Promise<void> {
   console.log("  Setup complete!");
   console.log(`  pty-win:      http://127.0.0.1:${opts.port}`);
   console.log(`  emcom-server: ${emcomUrl}`);
+  console.log(`  logs:         ${logsDir}`);
   console.log("");
   console.log("  Press Ctrl+C to stop all services.");
   console.log("");

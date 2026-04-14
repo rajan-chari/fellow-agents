@@ -1,9 +1,9 @@
 import { spawn } from "child_process";
 import http from "http";
 import https from "https";
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, openSync } from "fs";
 import { join } from "path";
-import { pidDir, binDir, ptyWinDir } from "./paths.js";
+import { pidDir, binDir, ptyWinDir, logsDir } from "./paths.js";
 import { binarySuffix } from "./platform.js";
 
 function writePid(name: string, pid: number): void {
@@ -23,6 +23,15 @@ function removePid(name: string): void {
   if (existsSync(file)) rmSync(file);
 }
 
+function openLog(name: string): number {
+  mkdirSync(logsDir, { recursive: true });
+  return openSync(join(logsDir, `${name}.log`), "w");
+}
+
+export function logPath(name: string): string {
+  return join(logsDir, `${name}.log`);
+}
+
 function isRunning(pid: number): boolean {
   try {
     process.kill(pid, 0);
@@ -34,10 +43,11 @@ function isRunning(pid: number): boolean {
 
 export function startEmcomServer(emcomPort: number, env: NodeJS.ProcessEnv): number {
   const bin = join(binDir, `emcom-server${binarySuffix()}`);
+  const log = openLog("emcom-server");
   const proc = spawn(bin, ["--port", String(emcomPort)], {
     env: { ...env, EMCOM_PORT: String(emcomPort) },
     detached: true,
-    stdio: "ignore",
+    stdio: ["ignore", log, log],
   });
   proc.unref();
   writePid("emcom-server", proc.pid!);
@@ -46,10 +56,11 @@ export function startEmcomServer(emcomPort: number, env: NodeJS.ProcessEnv): num
 
 export function startPtyWin(port: number, workspacesDir: string, emcomUrl: string, env: NodeJS.ProcessEnv): number {
   const main = join(ptyWinDir, "dist", "index.js");
+  const log = openLog("pty-win");
   const proc = spawn("node", [main, "--port", String(port), "--root", workspacesDir, "--emcom", emcomUrl], {
     env,
     detached: true,
-    stdio: "ignore",
+    stdio: ["ignore", log, log],
   });
   proc.unref();
   writePid("pty-win", proc.pid!);
