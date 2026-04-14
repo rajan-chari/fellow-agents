@@ -162,10 +162,15 @@ jobs:
             | `pty-win.zip` | Terminal multiplexer (requires Node.js 18+) |
 
             ### Quick start
-            ```powershell
+            ```bash
+            npm install -g fellow-agents
+            fellow-agents start
+            ```
+
+            Or clone directly:
+            ```bash
             git clone https://github.com/rajan-chari/fellow-agents
-            cd fellow-agents
-            .\setup.ps1
+            cd fellow-agents && ./setup.sh
             ```
           files: |
             bin-win-x64.zip
@@ -174,3 +179,28 @@ jobs:
             pty-win.zip
           draft: false
           prerelease: false
+
+  # Publish to npm
+  npm-publish:
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+
+      - name: Install and build
+        run: |
+          npm install
+          npm run build
+
+      - name: Set version from tag
+        run: npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
+
+      - name: Publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

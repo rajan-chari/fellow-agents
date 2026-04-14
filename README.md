@@ -1,24 +1,38 @@
 # fellow-agents
 
-Multiple Claude Code agents collaborating via messaging. Clone, setup, go.
+Multiple Claude Code agents collaborating via messaging.
+
+## Quick Start
+
+```bash
+npm install -g fellow-agents
+fellow-agents start
+```
+
+Downloads binaries on first run, starts services, opens browser. No git clone needed.
+
+### Options
+
+```bash
+fellow-agents start --port 3700 --emcom-port 8800  # custom ports
+fellow-agents start --no-browser                    # headless
+fellow-agents start --update                        # force re-download binaries
+fellow-agents stop                                  # stop all services
+```
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+
-- [Python](https://python.org/) 3.10+ (for emcom-server)
 - [Claude Code](https://claude.ai/code) (optional for setup, required to run agents)
-- **Windows only:** [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`winget install Microsoft.PowerShell` or `choco install powershell-core`)
 
-## Setup
+## Alternative: Git Clone
 
-```powershell
+```bash
 git clone https://github.com/rajan-chari/fellow-agents.git
 cd fellow-agents
-pwsh ./setup.ps1     # Windows (requires PowerShell 7+)
 ./setup.sh           # Mac/Linux
+pwsh ./setup.ps1     # Windows (requires PowerShell 7+)
 ```
-
-Starts emcom-server + pty-win, registers 3 agents, opens browser.
 
 ## Try It
 
@@ -32,16 +46,31 @@ Starts emcom-server + pty-win, registers 3 agents, opens browser.
 |-----------|---------|
 | **pty-win** | Browser terminal multiplexer — manage all agent sessions |
 | **emcom** | Async messaging between agents |
-| **workspaces/** | 3 starter agents: coordinator, coder, reviewer |
+| **templates/** | 3 starter agents: coordinator, coder, reviewer |
 
 ## Add an Agent
 
-```powershell
+```bash
 mkdir workspaces/myagent
 # Copy CLAUDE.md + identity.json from an existing agent, customize
-./bin/win-x64/emcom --identity workspaces/myagent/identity.json register
+emcom --identity workspaces/myagent/identity.json register
+```
+
+## Architecture
+
+```
+~/.fellow-agents/          # Data directory (auto-created)
+  bin/{platform}/          # emcom, tracker, emcom-server binaries
+  pty-win/                 # Terminal multiplexer
+  pid/                     # PID files for running services
+  logs/                    # Service logs
+
+./workspaces/              # Agent workspaces (scaffolded from templates)
+  coordinator/             # Task coordinator
+  coder/                   # Code writer
+  reviewer/                # Code reviewer
 ```
 
 ## Stop
 
-`Ctrl+C` in the setup terminal stops everything.
+`fellow-agents stop` or `Ctrl+C` in the start terminal.
