@@ -43,15 +43,31 @@ function isRunning(pid: number): boolean {
 
 export function startEmcomServer(emcomPort: number, env: NodeJS.ProcessEnv): number {
   const bin = join(binDir, `emcom-server${binarySuffix()}`);
+  if (!existsSync(bin)) {
+    console.error(`  emcom-server not found at ${bin}`);
+    return -1;
+  }
   const log = openLog("emcom-server");
-  const proc = spawn(bin, ["--port", String(emcomPort)], {
-    env: { ...env, EMCOM_PORT: String(emcomPort) },
-    detached: true,
-    stdio: ["ignore", log, log],
-  });
-  proc.unref();
-  writePid("emcom-server", proc.pid!);
-  return proc.pid!;
+  try {
+    const proc = spawn(bin, ["--port", String(emcomPort)], {
+      env: { ...env, EMCOM_PORT: String(emcomPort) },
+      detached: true,
+      stdio: ["ignore", log, log],
+    });
+    proc.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EACCES") {
+        console.error(`  Permission denied: ${bin}`);
+        console.error(`  Fix: chmod +x "${bin}"`);
+      }
+    });
+    proc.unref();
+    writePid("emcom-server", proc.pid!);
+    return proc.pid!;
+  } catch (err: any) {
+    console.error(`  Failed to start emcom-server: ${err.message}`);
+    console.error(`  Check permissions on ${binDir}`);
+    return -1;
+  }
 }
 
 export function startPtyWin(port: number, workspacesDir: string, emcomUrl: string, env: NodeJS.ProcessEnv): number {

@@ -1,5 +1,5 @@
 import { get } from "https";
-import { createWriteStream, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "fs";
+import { createWriteStream, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, chmodSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { execSync } from "child_process";
 import { dataDir, binDir, ptyWinDir, versionFile } from "./paths.js";
@@ -74,6 +74,12 @@ export async function downloadBinaries(force: boolean = false): Promise<string> 
       mkdirSync(binDir, { recursive: true });
       extractZip(dest, dataDir);
       rmSync(dest);
+      // chmod +x on Linux/Mac
+      if (process.platform !== "win32") {
+        for (const f of readdirSync(binDir)) {
+          try { chmodSync(join(binDir, f), 0o755); } catch {}
+        }
+      }
     } else if (asset.name.includes("pty-win")) {
       console.log(`  Downloading ${asset.name}...`);
       const dest = join(dataDir, asset.name);
