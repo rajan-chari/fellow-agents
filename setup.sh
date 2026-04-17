@@ -143,8 +143,31 @@ for i in $(seq 1 10); do
 done
 echo "  emcom-server running on :$EMCOM_PORT"
 
+# --- Clear stale workspace config ---
+echo "[4/7] Clearing stale workspace config..."
+for ws in "$ROOT/templates"/*/; do
+  name=$(basename "$ws")
+  # Remove old .claude/ dirs — they get regenerated in step 6
+  if [ -d "$ws/.claude" ]; then
+    rm -rf "$ws/.claude"
+    echo "  Cleared: $name/.claude/"
+  fi
+  # Rewrite identity.json with correct server URL
+  id_file="$ws/identity.json"
+  if [ -f "$id_file" ] && command -v python3 &>/dev/null; then
+    python3 -c "
+import json, sys
+with open('$id_file', 'r') as f: d = json.load(f)
+d['server'] = 'http://127.0.0.1:$EMCOM_PORT'
+with open('$id_file', 'w') as f: json.dump(d, f, separators=(',', ':'))
+"
+    echo "  Updated server URL: $name/identity.json → :$EMCOM_PORT"
+  fi
+done
+echo "  Stale config cleared"
+
 # --- Register workspaces ---
-echo "[4/6] Registering agents..."
+echo "[5/7] Registering agents..."
 EMCOM="$BIN_DIR/emcom"
 for ws in "$ROOT/templates"/*/; do
   name=$(basename "$ws")
@@ -155,7 +178,7 @@ for ws in "$ROOT/templates"/*/; do
 done
 
 # --- Configure hooks ---
-echo "[5/6] Configuring Claude Code hooks..."
+echo "[6/7] Configuring Claude Code hooks..."
 for ws in "$ROOT/templates"/*/; do
   name=$(basename "$ws")
   claude_dir="$ws/.claude"
@@ -174,7 +197,7 @@ HOOKS
 done
 
 # --- Start pty-win ---
-echo "[6/6] Starting pty-win..."
+echo "[7/7] Starting pty-win..."
 if command -v pty-win &>/dev/null; then
   pty-win --port "$PTY_WIN_PORT" --root "$ROOT/templates" --emcom "http://127.0.0.1:$EMCOM_PORT" &
   PTY_PID=$!

@@ -144,8 +144,28 @@ for ($i = 0; $i -lt 10; $i++) {
 if ($ready) { Write-Host "  emcom-server running on :$EmcomPort" -ForegroundColor Green }
 else { Write-Warning "  emcom-server may not be ready — continuing" }
 
+# --- Clear stale workspace config ---
+Write-Host "[4/7] Clearing stale workspace config..." -ForegroundColor Yellow
+foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
+    # Remove old .claude/ dirs — they get regenerated in step 6
+    $claudeDir = Join-Path $ws.FullName ".claude"
+    if (Test-Path $claudeDir) {
+        Remove-Item $claudeDir -Recurse -Force
+        Write-Host "  Cleared: $($ws.Name)/.claude/" -ForegroundColor DarkGray
+    }
+    # Rewrite identity.json with correct server URL
+    $idFile = Join-Path $ws.FullName "identity.json"
+    if (Test-Path $idFile) {
+        $identity = Get-Content $idFile -Raw | ConvertFrom-Json
+        $identity.server = "http://127.0.0.1:$EmcomPort"
+        $identity | ConvertTo-Json -Compress | Set-Content $idFile -Encoding UTF8 -NoNewline
+        Write-Host "  Updated server URL: $($ws.Name)/identity.json → :$EmcomPort" -ForegroundColor DarkGray
+    }
+}
+Write-Host "  Stale config cleared" -ForegroundColor Green
+
 # --- Register workspaces ---
-Write-Host "[4/6] Registering agents..." -ForegroundColor Yellow
+Write-Host "[5/7] Registering agents..." -ForegroundColor Yellow
 $Emcom = Join-Path $BinDir "emcom.exe"
 foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     $idFile = Join-Path $ws.FullName "identity.json"
@@ -160,7 +180,7 @@ foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
 }
 
 # --- Configure hooks ---
-Write-Host "[5/6] Configuring Claude Code hooks..." -ForegroundColor Yellow
+Write-Host "[6/7] Configuring Claude Code hooks..." -ForegroundColor Yellow
 foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     $claudeDir = Join-Path $ws.FullName ".claude"
     if (-not (Test-Path $claudeDir)) { New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null }
@@ -180,7 +200,7 @@ foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
 }
 
 # --- Start pty-win ---
-Write-Host "[6/6] Starting pty-win..." -ForegroundColor Yellow
+Write-Host "[7/7] Starting pty-win..." -ForegroundColor Yellow
 $ptyWinMain = Join-Path $PtyWinDir "dist" "index.js"
 if (Test-Path $ptyWinMain) {
     $ptyProc = Start-Process -FilePath "node" -ArgumentList @(
