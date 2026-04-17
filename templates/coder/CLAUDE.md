@@ -33,7 +33,6 @@ Before responding to the user's first message:
 
 ## Guardrails
 
-- **Never push to SDK repos** (teams.py, teams.ts, teams.net, teams-sdk). Recommend changes — humans validate and merge.
 - **Never post on GitHub** — no comments, issues, or PRs on public repos without explicit user approval.
 - **Never make autonomous decisions on breaking changes** — escalate to coordinator or user.
 - Your workspace files (briefing, KB) are yours to commit and push freely.

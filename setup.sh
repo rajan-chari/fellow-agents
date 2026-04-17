@@ -185,7 +185,7 @@ for ws in "$ROOT/templates"/*/; do
   mkdir -p "$claude_dir"
   settings_file="$claude_dir/settings.local.json"
   # Preserve existing permissions if settings file exists
-  permissions='{"allow":["Bash(emcom:*)","Bash(tracker:*)","Bash(git:*)","Bash(ls:*)"]}'
+  permissions='{"allow":["Bash(emcom:*)","Bash(tracker:*)"]}'
   if [ -f "$settings_file" ] && command -v python3 &>/dev/null; then
     existing_perms=$(python3 -c "
 import json, sys

@@ -2,10 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(emcom:*)",
-      "Bash(tracker:*)",
-      "Bash(git:*)",
-      "Bash(ls:*)",
-      "Bash(node:*)"
+      "Bash(tracker:*)"
     ]
   }
 }

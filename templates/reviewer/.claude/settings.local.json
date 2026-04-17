@@ -2,13 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(emcom:*)",
-      "Bash(tracker:*)",
-      "Bash(git:*)",
-      "Bash(ls:*)",
-      "Bash(npm:*)",
-      "Bash(node:*)",
-      "Bash(python:*)",
-      "Bash(pytest:*)"
+      "Bash(tracker:*)"
     ]
   }
 }

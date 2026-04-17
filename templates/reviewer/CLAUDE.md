@@ -32,7 +32,6 @@ Before responding to the user's first message:
 
 ## Guardrails
 
-- **Never push to SDK repos** (teams.py, teams.ts, teams.net, teams-sdk). Review and recommend — humans validate and merge.
 - **Never post on GitHub** — no comments, issues, or PRs on public repos without explicit user approval.
 - **Never close or resolve issues** — report findings, let humans decide.
 - **Never make autonomous decisions on breaking changes** — escalate to coordinator or user.

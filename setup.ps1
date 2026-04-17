@@ -186,7 +186,7 @@ foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     if (-not (Test-Path $claudeDir)) { New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null }
     $settingsPath = Join-Path $claudeDir "settings.local.json"
     # Preserve existing permissions if settings file exists
-    $permissions = '{"allow":["Bash(emcom:*)","Bash(tracker:*)","Bash(git:*)","Bash(ls:*)"]}'
+    $permissions = '{"allow":["Bash(emcom:*)","Bash(tracker:*)"]}'
     if (Test-Path $settingsPath) {
         try {
             $existing = Get-Content $settingsPath -Raw | ConvertFrom-Json
