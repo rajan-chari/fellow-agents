@@ -1,6 +1,7 @@
 node_modules/
 dist/
-templates/*/.claude/
+templates/*/.claude/*
+!templates/*/.claude/settings.local.json
 workspaces/
 *.log
 *.db

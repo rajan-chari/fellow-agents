@@ -147,12 +147,6 @@ else { Write-Warning "  emcom-server may not be ready — continuing" }
 # --- Clear stale workspace config ---
 Write-Host "[4/7] Clearing stale workspace config..." -ForegroundColor Yellow
 foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
-    # Remove old .claude/ dirs — they get regenerated in step 6
-    $claudeDir = Join-Path $ws.FullName ".claude"
-    if (Test-Path $claudeDir) {
-        Remove-Item $claudeDir -Recurse -Force
-        Write-Host "  Cleared: $($ws.Name)/.claude/" -ForegroundColor DarkGray
-    }
     # Rewrite identity.json with correct server URL
     $idFile = Join-Path $ws.FullName "identity.json"
     if (Test-Path $idFile) {
@@ -179,14 +173,25 @@ foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     }
 }
 
-# --- Configure hooks ---
+# --- Configure hooks (merge with existing permissions) ---
 Write-Host "[6/7] Configuring Claude Code hooks..." -ForegroundColor Yellow
 foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     $claudeDir = Join-Path $ws.FullName ".claude"
     if (-not (Test-Path $claudeDir)) { New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null }
     $settingsPath = Join-Path $claudeDir "settings.local.json"
+    # Preserve existing permissions if settings file exists
+    $permissions = '{"allow":["Bash(emcom:*)","Bash(tracker:*)","Bash(git:*)","Bash(ls:*)"]}'
+    if (Test-Path $settingsPath) {
+        try {
+            $existing = Get-Content $settingsPath -Raw | ConvertFrom-Json
+            if ($existing.permissions) {
+                $permissions = ($existing.permissions | ConvertTo-Json -Compress)
+            }
+        } catch {}
+    }
     $json = @"
 {
+  "permissions": $permissions,
   "hooks": {
     "Stop": [{"matcher": "", "hooks": [{"type": "http", "url": "http://127.0.0.1:$PtyWinPort/api/hook/stop", "timeout": 2}]}],
     "Notification": [{"matcher": "idle_prompt|permission_prompt", "hooks": [{"type": "http", "url": "http://127.0.0.1:$PtyWinPort/api/hook/notify", "timeout": 2}]}],

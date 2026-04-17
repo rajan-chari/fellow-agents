@@ -147,11 +147,6 @@ echo "  emcom-server running on :$EMCOM_PORT"
 echo "[4/7] Clearing stale workspace config..."
 for ws in "$ROOT/templates"/*/; do
   name=$(basename "$ws")
-  # Remove old .claude/ dirs — they get regenerated in step 6
-  if [ -d "$ws/.claude" ]; then
-    rm -rf "$ws/.claude"
-    echo "  Cleared: $name/.claude/"
-  fi
   # Rewrite identity.json with correct server URL
   id_file="$ws/identity.json"
   if [ -f "$id_file" ] && command -v python3 &>/dev/null; then
@@ -177,14 +172,28 @@ for ws in "$ROOT/templates"/*/; do
   fi
 done
 
-# --- Configure hooks ---
+# --- Configure hooks (merge with existing permissions) ---
 echo "[6/7] Configuring Claude Code hooks..."
 for ws in "$ROOT/templates"/*/; do
   name=$(basename "$ws")
   claude_dir="$ws/.claude"
   mkdir -p "$claude_dir"
-  cat > "$claude_dir/settings.local.json" <<HOOKS
+  settings_file="$claude_dir/settings.local.json"
+  # Preserve existing permissions if settings file exists
+  permissions='{"allow":["Bash(emcom:*)","Bash(tracker:*)","Bash(git:*)","Bash(ls:*)"]}'
+  if [ -f "$settings_file" ] && command -v python3 &>/dev/null; then
+    existing_perms=$(python3 -c "
+import json, sys
+try:
+  with open('$settings_file') as f: d = json.load(f)
+  if 'permissions' in d: print(json.dumps(d['permissions'], separators=(',',':')))
+  else: sys.exit(1)
+except: sys.exit(1)
+" 2>/dev/null) && permissions="$existing_perms"
+  fi
+  cat > "$settings_file" <<HOOKS
 {
+  "permissions": $permissions,
   "hooks": {
     "Stop": [{"matcher": "", "hooks": [{"type": "http", "url": "http://127.0.0.1:$PTY_WIN_PORT/api/hook/stop", "timeout": 2}]}],
     "Notification": [{"matcher": "idle_prompt|permission_prompt", "hooks": [{"type": "http", "url": "http://127.0.0.1:$PTY_WIN_PORT/api/hook/notify", "timeout": 2}]}],
