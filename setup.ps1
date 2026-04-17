@@ -146,6 +146,12 @@ else { Write-Warning "  emcom-server may not be ready — continuing" }
 
 # --- Clear stale workspace config ---
 Write-Host "[4/7] Clearing stale workspace config..." -ForegroundColor Yellow
+# Clear stale emcom database from previous installs
+$emcomDir = Join-Path $HOME ".emcom"
+if (Test-Path $emcomDir) {
+    Remove-Item $emcomDir -Recurse -Force
+    Write-Host "  Cleared: ~/.emcom/ (stale database)" -ForegroundColor DarkGray
+}
 foreach ($ws in Get-ChildItem $WorkspacesDir -Directory) {
     # Rewrite identity.json with correct server URL
     $idFile = Join-Path $ws.FullName "identity.json"

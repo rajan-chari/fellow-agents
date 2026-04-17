@@ -145,6 +145,11 @@ echo "  emcom-server running on :$EMCOM_PORT"
 
 # --- Clear stale workspace config ---
 echo "[4/7] Clearing stale workspace config..."
+# Clear stale emcom database from previous installs
+if [ -d "$HOME/.emcom" ]; then
+  rm -rf "$HOME/.emcom"
+  echo "  Cleared: ~/.emcom/ (stale database)"
+fi
 for ws in "$ROOT/templates"/*/; do
   name=$(basename "$ws")
   # Rewrite identity.json with correct server URL
