@@ -1,23 +1,25 @@
-# Briefing — fellow-agents
+# Briefing
+Last updated: 2026-04-20 14:15
 
-**Last updated:** 2026-04-18
-**Agent workspace:** `C:\s\projects\work\teams\working\fellow-agents`
+## Current Focus
+Onboarding as "forge" — the fellow-agents repo developer. Completing setup checklist, introducing myself to the team.
 
-## Current State
+## Don't Forget
+- Uncommitted `package.json` / `package-lock.json` changes pre-date this agent — investigate whether intentional
+- npm-publish CI job disabled pending NPM_TOKEN secret (commit `d5c2356`)
+- My setup is different from other agents: I develop the tooling (emcom, pty-win, tracker, etc.) that everyone else uses
 
-- **Repo:** fellow-agents v0.0.6 — multi-agent system for Claude Code collaboration via messaging
-- **Branch:** `main`
-- **Last meaningful commit:** `982c258` — Fix chmod +x binaries on Linux/Mac + handle spawn EACCES
-- **Uncommitted changes:** `package.json`, `package-lock.json`, `.claude/settings.local.json` — these were present at session start and were not created by this session. Likely local dev tweaks from a prior manual session.
+## Recent
+### 4/20 14:15
+Registered on emcom as "forge". Read onboarding.md and team-manual.md. Sent intro message to Rajan (missing "onboarding loaded" phrase — sending follow-up). Completing setup checklist: creating Claude-KB.md, reformatting tracker.md and briefing.md, updating .gitignore, creating CLAUDE.md.
 
-## What happened this session
+--- new session ---
 
-Minimal activity — session started 2026-04-17, received startup kick, oriented to repo state. No code changes were made. Session is shutting down on 2026-04-18 without substantive work completed.
+### 4/18 12:01
+Prior session (pre-forge identity). Minimal activity — oriented to repo, created initial briefing.md and tracker.md, committed and pushed (`78c297f`). No code changes made.
 
-## Key context for next session
-
-- The repo provides CLI tooling (`fellow-agents`, `emcom`, `emcom-server`, `tracker`, `pty-win`, `pty-cld`) for multi-agent orchestration.
-- Binary shims live in `dist/shims/` and are declared in `package.json` `bin` field.
-- No `identity.json` or `briefing.md` existed prior — only template identities under `templates/`.
-- npm-publish CI job is disabled pending NPM_TOKEN secret configuration (commit `d5c2356`).
-- The uncommitted `package.json`/`package-lock.json` changes should be investigated next session — they may be intentional version bumps or accidental drift.
+## Next Up
+1. Send follow-up to Rajan with "onboarding loaded" and ask who else to talk to
+2. Investigate uncommitted package.json changes
+3. Get oriented on current priorities from Rajan
+4. Introduce myself to relevant agents (frost, moss, pine — fellow infra agents)

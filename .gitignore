@@ -10,3 +10,7 @@ workspaces/
 bin/
 pty-win/
 *.tgz
+
+# Agent workspace private files
+*-private.md
+session-context.md
