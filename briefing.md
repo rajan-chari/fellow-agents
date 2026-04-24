@@ -1,8 +1,8 @@
 # Briefing
-Last updated: 2026-04-20 22:02
+Last updated: 2026-04-24 01:23
 
 ## Current Focus
-Onboarding complete. Wiki seeded and persisted. Idle — awaiting assignment or picking up a Watching item.
+Idle — Phase 2 of working-state migration pending (waiting for Rajan's ping with folder path). No active coding work.
 
 ## Don't Forget
 - Uncommitted `package.json` / `package-lock.json` / `.claude/settings.local.json` changes pre-date this agent — investigate whether intentional
@@ -14,6 +14,9 @@ Onboarding complete. Wiki seeded and persisted. Idle — awaiting assignment or 
 - **working-state migration — Phase 2 pending.** Rajan is piloting with 6 canaries first (spark.net, spark-ts, librarian, amber, pine, scout). Expect a ping with my `working-state/forge/` folder path + migration checklist. When the ping arrives: move briefing.md to working-state, split Claude-KB.md per heuristic (field-notes / wiki / decisions), delete tracker.md and use tracker CLI, update CLAUDE.md startup, .gitignore residual leaks (PNGs, coverage/, settings.local.json). Thread `f7906c3b` has the full plan v2.
 
 ## Recent
+### 4/23 23:18 – 4/24 00:41
+Rajan sent RFC for `working-state` repo (context leak fix — move agent working files out of shared/public repos). Replied with detailed answers: flagged that fellow-agents (public GitHub) leaks more than fellow-scholars, endorsed field-notes name, classified KB entries as easy to migrate, preferred explicit paths over junctions, noted I can drop tracker.md this week but not today. Rajan then sent v2 synthesis from 22 replies — my feedback shaped the scope expansion to public agent repos. I'm Phase 2 (canaries go first: spark.net, spark-ts, librarian, amber, pine, scout). Acknowledged and offered to pilot the CLAUDE.md startup rewrite pattern since mine is minimal. Noted migration pending in Don't Forget (`15243b0`).
+
 ### 4/20 19:03–21:09
 Team wiki launched. Rajan asked me to seed `tooling/fellow-agents/` — sent two messages to librarian (architecture overview + setup gotchas). Librarian wrote architecture.md, setup.md, releases.md, index.md. Verified content accuracy. Rajan then asked me to persist wiki in CLAUDE.md — added Team Wiki section with path, ownership, librarian workflow, and wiki read as startup step 3. Committed and pushed (`4c34ca3`). Cleaned up Claude-KB.md to defer shared facts to wiki, keeping only forge-specific operational notes. Global team-onboarding rule updated to include wiki contribution guidelines (librarian vs private-librarian routing).
 
@@ -34,6 +37,7 @@ Registered on emcom as "forge". Completed onboarding checklist. Committed and pu
 Prior session (pre-forge identity). Created initial briefing.md and tracker.md (`78c297f`).
 
 ## Next Up
-1. Investigate uncommitted package.json changes — determine if intentional
-2. Understand release.yml workflow (how pty-cld auto-pulls from banana/main)
-3. Pick up work: template improvements, NPM_TOKEN setup, or whatever Rajan assigns
+1. **Await working-state migration ping from Rajan** (Phase 2, after canaries finish)
+2. Investigate uncommitted package.json changes — determine if intentional
+3. Understand release.yml workflow (how pty-cld auto-pulls from banana/main)
+4. Pick up work: template improvements, NPM_TOKEN setup, or whatever Rajan assigns

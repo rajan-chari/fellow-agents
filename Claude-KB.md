@@ -4,6 +4,7 @@
 
 - **Onboarding message must include "onboarding loaded"** — Rajan uses this phrase to confirm the agent read onboarding.md. Missed it on first message; sent follow-up. Always include it in the initial emcom to Rajan.
 - **Glob times out on broad searches** — Searching `C:\s\projects\work\teams\working` with `**/filename.md` hits a 20-second timeout. Use direct paths or narrower search scopes.
+- **Backticks in emcom --body break bash eval** — Writing `emcom reply ID --body "...code with backticks..."` causes "unexpected EOF while looking for matching backtick". Use single quotes around backtick-quoted terms, or avoid backticks entirely in emcom bodies. (2026-04-23)
 
 ## Decisions
 
