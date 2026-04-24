@@ -11,6 +11,7 @@ Onboarding complete. Wiki seeded and persisted. Idle — awaiting assignment or 
 - This workspace is different from others: forge develops the tooling (emcom, pty-win, tracker, pty-cld shims) that all other agents use
 - Never restart emcom-server on port 8800 during dev — kills all agent comms
 - Wiki contributions: shared knowledge → `librarian`, sensitive content → `private-librarian` (global rule updated)
+- **working-state migration — Phase 2 pending.** Rajan is piloting with 6 canaries first (spark.net, spark-ts, librarian, amber, pine, scout). Expect a ping with my `working-state/forge/` folder path + migration checklist. When the ping arrives: move briefing.md to working-state, split Claude-KB.md per heuristic (field-notes / wiki / decisions), delete tracker.md and use tracker CLI, update CLAUDE.md startup, .gitignore residual leaks (PNGs, coverage/, settings.local.json). Thread `f7906c3b` has the full plan v2.
 
 ## Recent
 ### 4/20 19:03–21:09
