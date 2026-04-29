@@ -11,6 +11,18 @@ bin/
 pty-win/
 *.tgz
 
-# Agent workspace private files
+# Agent workspace private files (working state lives in working-state/<agent>/)
 *-private.md
 session-context.md
+briefing*.md
+field-notes.md
+Claude-KB.md
+tracker.md
+notes.md
+*.png
+.playwright-mcp/
+coverage/
+cost-history.json
+costs.json
+settings.local.json
+.obsidian/
