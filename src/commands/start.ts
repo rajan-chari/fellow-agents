@@ -115,10 +115,13 @@ export async function start(opts: StartOptions): Promise<void> {
   if (skillResult.written.length > 0) {
     console.log(`  Installed ${skillResult.written.length} skill file(s)`);
   }
-  if (skillResult.skipped.length > 0) {
-    console.log(`  Preserved ${skillResult.skipped.length} existing skill file(s) — delete to refresh`);
+  if (skillResult.refreshed.length > 0) {
+    console.log(`  Refreshed ${skillResult.refreshed.length} skill file(s) to latest`);
   }
-  if (skillResult.written.length === 0 && skillResult.skipped.length === 0) {
+  if (skillResult.skipped.length > 0) {
+    console.log(`  Preserved ${skillResult.skipped.length} existing skill file(s) — customized or unowned`);
+  }
+  if (skillResult.written.length === 0 && skillResult.refreshed.length === 0 && skillResult.skipped.length === 0) {
     console.log("  No skills bundled");
   }
 
