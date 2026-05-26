@@ -97,11 +97,16 @@ export function uninstall(opts: UninstallOptions): void {
   // Remove skills we installed (only the ones that match the shipped bytes —
   // user-customized files are preserved).
   const skillResult = uninstallSkills();
-  if (skillResult.removed.length > 0) {
-    console.log(`  Removed ${skillResult.removed.length} skill file(s)`);
-  }
-  if (skillResult.preserved.length > 0) {
-    console.log(`  Preserved ${skillResult.preserved.length} customized skill file(s)`);
+  const skillTotal = skillResult.removed.length + skillResult.preserved.length;
+  if (skillTotal === 0) {
+    console.log("  No fellow-agents-tracked skill files found");
+  } else {
+    if (skillResult.removed.length > 0) {
+      console.log(`  Removed ${skillResult.removed.length} skill file(s)`);
+    }
+    if (skillResult.preserved.length > 0) {
+      console.log(`  Preserved ${skillResult.preserved.length} customized/unowned skill file(s)`);
+    }
   }
 
   for (const t of targets) {

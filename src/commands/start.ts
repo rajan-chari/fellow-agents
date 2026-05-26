@@ -112,17 +112,19 @@ export async function start(opts: StartOptions): Promise<void> {
   // 5. Install AI skills (SKILL.md files) to known CLI paths
   console.log("[5/8] Installing skills...");
   const skillResult = installSkills();
-  if (skillResult.written.length > 0) {
-    console.log(`  Installed ${skillResult.written.length} skill file(s)`);
-  }
-  if (skillResult.refreshed.length > 0) {
-    console.log(`  Refreshed ${skillResult.refreshed.length} skill file(s) to latest`);
-  }
-  if (skillResult.skipped.length > 0) {
-    console.log(`  Preserved ${skillResult.skipped.length} existing skill file(s) — customized or unowned`);
-  }
-  if (skillResult.written.length === 0 && skillResult.refreshed.length === 0 && skillResult.skipped.length === 0) {
-    console.log("  No skills bundled");
+  const skillTotal = skillResult.written.length + skillResult.refreshed.length + skillResult.skipped.length;
+  if (skillTotal === 0) {
+    console.log("  No bundled skills");
+  } else {
+    if (skillResult.written.length > 0) {
+      console.log(`  Installed ${skillResult.written.length} skill file(s)`);
+    }
+    if (skillResult.refreshed.length > 0) {
+      console.log(`  Refreshed ${skillResult.refreshed.length} skill file(s) to latest`);
+    }
+    if (skillResult.skipped.length > 0) {
+      console.log(`  Preserved ${skillResult.skipped.length} existing skill file(s) — customized or unowned`);
+    }
   }
 
   // PATH trick: prepend bin dir so agents find emcom/tracker

@@ -1,6 +1,6 @@
 {
   "name": "fellow-agents",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Multi-agent system — multiple Claude Code instances collaborating via messaging",
   "type": "module",
   "bin": {

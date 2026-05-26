@@ -94,6 +94,48 @@ function killTree(pid: number): void {
   }
 }
 
+// Scan a port for any listening PID and kill it. Used as a fallback when our
+// PID files are missing (e.g., user ran clean) but a previous service is still
+// holding the port — produces orphans that block re-start and re-uninstall.
+function killOnPort(port: number): number[] {
+  const killed: number[] = [];
+  try {
+    if (process.platform === "win32") {
+      const output = execSync(`netstat -ano -p tcp`, { stdio: ["ignore", "pipe", "ignore"] }).toString();
+      const pids = new Set<number>();
+      for (const line of output.split("\n")) {
+        const trimmed = line.trim();
+        // Match "127.0.0.1:8800   ...   LISTENING   <pid>"
+        if (trimmed.includes(`:${port}`) && trimmed.includes("LISTENING")) {
+          const parts = trimmed.split(/\s+/);
+          const pid = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(pid) && pid > 4) pids.add(pid);   // skip system PIDs 0/4
+        }
+      }
+      for (const pid of pids) {
+        try {
+          execSync(`taskkill /F /T /PID ${pid}`, { stdio: "ignore" });
+          killed.push(pid);
+        } catch {}
+      }
+    } else {
+      const output = execSync(`lsof -ti:${port}`, { stdio: ["ignore", "pipe", "ignore"] }).toString();
+      for (const line of output.split("\n")) {
+        const pid = parseInt(line.trim(), 10);
+        if (!isNaN(pid)) {
+          try {
+            process.kill(pid, "SIGKILL");
+            killed.push(pid);
+          } catch {}
+        }
+      }
+    }
+  } catch {
+    // No output (no process listening) or command failed — return empty
+  }
+  return killed;
+}
+
 export function stopAll(): void {
   for (const name of ["emcom-server", "pty-win"]) {
     const pid = readPid(name);
@@ -108,6 +150,15 @@ export function stopAll(): void {
       console.log(`  ${name} not running`);
     }
     removePid(name);
+  }
+
+  // Fallback: scan default ports for orphans whose PID files have been lost.
+  // Common after `fellow-agents clean` or manual `Remove-Item` of pid/ dir.
+  for (const port of [3700, 8800]) {
+    const orphans = killOnPort(port);
+    if (orphans.length > 0) {
+      console.log(`  Killed orphan(s) on :${port} (pid ${orphans.join(", ")})`);
+    }
   }
 }
 
