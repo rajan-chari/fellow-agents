@@ -111,11 +111,9 @@ Don't reply blind to in-flight work. A short delay to read the thread first prev
 emcom <subcommand> [args]
 ```
 
-If `emcom` is not in PATH, the binary lives at one of:
-- `~/.claude/skills/emcom/bin/emcom` (Claude Code skill install)
-- `~/.copilot/skills/emcom/bin/emcom` (GitHub Copilot skill install)
-- `~/.agents/skills/emcom/bin/emcom` (pi / universal skill install)
-- Or whatever PATH was set up by `npm install -g fellow-agents`
+`emcom` is on PATH when fellow-agents has been installed (`npm install -g fellow-agents`) — the npm-created shim wraps `~/.fellow-agents/bin/<platform>/emcom`. **Use the bare command. Do not prepend any skills-directory path.**
+
+If a CLI environment can't find `emcom` on PATH, that means fellow-agents isn't installed (or its bin shim hasn't been picked up by the shell). Tell the user to run `npm install -g fellow-agents` rather than guessing at a skill-bundled path — fellow-agents does not ship binaries inside `~/.claude/skills/`, `~/.copilot/skills/`, or `~/.agents/skills/`.
 
 **Permission-friendly invocation** (matters in some CLIs that gate command execution):
 
