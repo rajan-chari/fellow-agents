@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import http from "http";
 import { join, resolve } from "path";
 import { execSync } from "child_process";
@@ -14,6 +14,16 @@ interface StartOptions {
   dir: string;
   noBrowser: boolean;
   update: boolean;
+}
+
+// Minimal engines.node range check — handles ">=N", "<N", and combinations.
+function nodeInRange(version: string, range: string): boolean {
+  const major = parseInt(version.split(".")[0], 10);
+  const minMatch = range.match(/>=?\s*(\d+)/);
+  const maxMatch = range.match(/<\s*(\d+)/);
+  const min = minMatch ? parseInt(minMatch[1], 10) : 0;
+  const max = maxMatch ? parseInt(maxMatch[1], 10) : Infinity;
+  return major >= min && major < max;
 }
 
 export async function start(opts: StartOptions): Promise<void> {
@@ -65,15 +75,34 @@ export async function start(opts: StartOptions): Promise<void> {
 
   // 3. Install pty-win dependencies
   console.log("[3/7] Installing pty-win...");
-  if (existsSync(join(ptyWinDir, "package.json"))) {
-    if (!existsSync(join(ptyWinDir, "node_modules"))) {
-      execSync("npm install --production", { cwd: ptyWinDir, stdio: "pipe" });
-    }
-    console.log("  pty-win ready");
-  } else {
+  const ptyPkgPath = join(ptyWinDir, "package.json");
+  if (!existsSync(ptyPkgPath)) {
     console.error("  pty-win not found — download may have failed");
     process.exit(1);
   }
+
+  // Warn fail-fast if Node is outside pty-win's supported range
+  try {
+    const ptyPkg = JSON.parse(readFileSync(ptyPkgPath, "utf-8"));
+    const range = ptyPkg.engines?.node;
+    if (range && !nodeInRange(nodeVer, range)) {
+      console.error(`  WARNING: pty-win supports Node ${range}, you have ${nodeVer}.`);
+      console.error(`  Install may fail. Consider using Node 22 LTS.`);
+    }
+  } catch {}
+
+  // Probe for a real dep instead of just node_modules/ — partial installs leave the dir but miss packages
+  const expressInstalled = existsSync(join(ptyWinDir, "node_modules", "express", "package.json"));
+  if (!expressInstalled) {
+    try {
+      execSync("npm install --omit=dev", { cwd: ptyWinDir, stdio: "inherit" });
+    } catch (err: any) {
+      console.error(`  pty-win install failed — see output above`);
+      console.error(`  Logs will be written to: ${logPath("pty-win")}`);
+      process.exit(1);
+    }
+  }
+  console.log("  pty-win ready");
 
   // 4. Scaffold workspaces
   console.log("[4/7] Scaffolding workspaces...");
