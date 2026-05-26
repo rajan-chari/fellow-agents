@@ -25,3 +25,6 @@ export const versionFile = join(dataDir, "bin", ".version");
 
 /** templates/ directory shipped with the npm package */
 export const templatesDir = join(__dirname, "..", "..", "templates");
+
+/** skills/ directory shipped with the npm package */
+export const skillsDir = join(__dirname, "..", "..", "skills");

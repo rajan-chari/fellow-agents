@@ -6,6 +6,7 @@ import { binDir, ptyWinDir, logsDir } from "../lib/paths.js";
 import { downloadBinaries } from "../lib/download.js";
 import { startEmcomServer, startPtyWin, stopAll, logPath } from "../lib/services.js";
 import { scaffoldWorkspaces, registerAgents, writeHooks } from "../lib/workspaces.js";
+import { installSkills } from "../lib/skills.js";
 import { binarySuffix } from "../lib/platform.js";
 
 interface StartOptions {
@@ -44,7 +45,7 @@ export async function start(opts: StartOptions): Promise<void> {
   const emcomUrl = `http://127.0.0.1:${opts.emcomPort}`;
 
   // 1. Prerequisites
-  console.log("[1/7] Checking prerequisites...");
+  console.log("[1/8] Checking prerequisites...");
   const nodeVer = process.versions.node;
   const nodeMajor = parseInt(nodeVer.split(".")[0], 10);
   if (nodeMajor < 18) {
@@ -61,7 +62,7 @@ export async function start(opts: StartOptions): Promise<void> {
   }
 
   // 2. Download binaries
-  console.log("[2/7] Downloading binaries...");
+  console.log("[2/8] Downloading binaries...");
   try {
     await downloadBinaries(opts.update);
   } catch (err) {
@@ -74,7 +75,7 @@ export async function start(opts: StartOptions): Promise<void> {
   }
 
   // 3. Install pty-win dependencies
-  console.log("[3/7] Installing pty-win...");
+  console.log("[3/8] Installing pty-win...");
   const ptyPkgPath = join(ptyWinDir, "package.json");
   if (!existsSync(ptyPkgPath)) {
     console.error("  pty-win not found — download may have failed");
@@ -105,14 +106,27 @@ export async function start(opts: StartOptions): Promise<void> {
   console.log("  pty-win ready");
 
   // 4. Scaffold workspaces
-  console.log("[4/7] Scaffolding workspaces...");
+  console.log("[4/8] Scaffolding workspaces...");
   scaffoldWorkspaces(workDir);
+
+  // 5. Install AI skills (SKILL.md files) to known CLI paths
+  console.log("[5/8] Installing skills...");
+  const skillResult = installSkills();
+  if (skillResult.written.length > 0) {
+    console.log(`  Installed ${skillResult.written.length} skill file(s)`);
+  }
+  if (skillResult.skipped.length > 0) {
+    console.log(`  Preserved ${skillResult.skipped.length} existing skill file(s) — delete to refresh`);
+  }
+  if (skillResult.written.length === 0 && skillResult.skipped.length === 0) {
+    console.log("  No skills bundled");
+  }
 
   // PATH trick: prepend bin dir so agents find emcom/tracker
   const env = { ...process.env, PATH: `${binDir}${process.platform === "win32" ? ";" : ":"}${process.env.PATH}` };
 
-  // 5. Start emcom-server
-  console.log("[5/7] Starting emcom-server...");
+  // 6. Start emcom-server
+  console.log("[6/8] Starting emcom-server...");
   const emcomPid = startEmcomServer(opts.emcomPort, env);
   console.log(`  emcom-server started (pid ${emcomPid})`);
 
@@ -138,13 +152,13 @@ export async function start(opts: StartOptions): Promise<void> {
     console.error(`  Check logs: ${logPath("emcom-server")}`);
   }
 
-  // 6. Register agents
-  console.log("[6/7] Registering agents + configuring hooks...");
+  // 7. Register agents
+  console.log("[7/8] Registering agents + configuring hooks...");
   registerAgents(workspacesDir, env);
   writeHooks(workspacesDir, opts.port);
 
-  // 7. Start pty-win
-  console.log("[7/7] Starting pty-win...");
+  // 8. Start pty-win
+  console.log("[8/8] Starting pty-win...");
   const ptyPid = startPtyWin(opts.port, workspacesDir, emcomUrl, env);
   console.log(`  pty-win started (pid ${ptyPid})`);
 
