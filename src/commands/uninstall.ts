@@ -2,6 +2,7 @@ import { existsSync, rmSync, statSync, readdirSync } from "fs";
 import { join, resolve } from "path";
 import { dataDir } from "../lib/paths.js";
 import { stopAll } from "../lib/services.js";
+import { uninstallSkills } from "../lib/skills.js";
 
 interface UninstallOptions {
   dir: string;
@@ -74,6 +75,7 @@ export function uninstall(opts: UninstallOptions): void {
   for (const t of targets) {
     console.log(`    ${t.path}  (${formatBytes(t.size)})`);
   }
+  console.log(`    Skill files installed by fellow-agents (customized files preserved)`);
   console.log("");
   console.log(`  Total: ${formatBytes(totalSize)}`);
   console.log("");
@@ -91,6 +93,16 @@ export function uninstall(opts: UninstallOptions): void {
   console.log("  Stopping services...");
   stopAll();
   console.log("");
+
+  // Remove skills we installed (only the ones that match the shipped bytes —
+  // user-customized files are preserved).
+  const skillResult = uninstallSkills();
+  if (skillResult.removed.length > 0) {
+    console.log(`  Removed ${skillResult.removed.length} skill file(s)`);
+  }
+  if (skillResult.preserved.length > 0) {
+    console.log(`  Preserved ${skillResult.preserved.length} customized skill file(s)`);
+  }
 
   for (const t of targets) {
     try {
