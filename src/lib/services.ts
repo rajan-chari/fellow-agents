@@ -1,4 +1,4 @@
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import http from "http";
 import https from "https";
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, openSync } from "fs";
@@ -83,12 +83,23 @@ export function startPtyWin(port: number, workspacesDir: string, emcomUrl: strin
   return proc.pid!;
 }
 
+// On Windows, PyInstaller --onefile binaries (like emcom-server) run as a bootloader + child
+// process. process.kill() only kills the bootloader; the child keeps the socket. taskkill /T
+// walks the process tree so the child dies too.
+function killTree(pid: number): void {
+  if (process.platform === "win32") {
+    execSync(`taskkill /F /T /PID ${pid}`, { stdio: "ignore" });
+  } else {
+    process.kill(pid);
+  }
+}
+
 export function stopAll(): void {
   for (const name of ["emcom-server", "pty-win"]) {
     const pid = readPid(name);
     if (pid && isRunning(pid)) {
       try {
-        process.kill(pid);
+        killTree(pid);
         console.log(`  Stopped ${name} (pid ${pid})`);
       } catch {
         console.log(`  Could not stop ${name} (pid ${pid})`);
