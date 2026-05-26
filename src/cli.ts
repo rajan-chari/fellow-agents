@@ -4,6 +4,8 @@ const args = process.argv.slice(2);
 
 // Default to "start" if no command given or first arg is a flag
 const command = args[0] === "stop" ? "stop"
+  : args[0] === "clean" ? "clean"
+  : args[0] === "uninstall" ? "uninstall"
   : (args[0] === "--help" || args[0] === "-h") ? "help"
   : "start";
 
@@ -28,12 +30,23 @@ if (command === "start") {
 } else if (command === "stop") {
   const { stop } = await import("./commands/stop.js");
   stop();
+} else if (command === "clean") {
+  const { clean } = await import("./commands/clean.js");
+  clean();
+} else if (command === "uninstall") {
+  const { uninstall } = await import("./commands/uninstall.js");
+  uninstall({
+    dir: getFlag("--dir", process.cwd()),
+    yes: hasFlag("--yes"),
+  });
 } else {
   console.log(`fellow-agents — multi-agent system for Claude Code
 
 Usage:
   fellow-agents [options]            Start services (default)
   fellow-agents stop                 Stop all running services
+  fellow-agents clean                Wipe cached binaries + pty-win, preserve logs
+  fellow-agents uninstall [--yes]    Remove all fellow-agents state (data dir + workspaces)
 
 Options:
   --port <number>       pty-win port (default: 3700)
@@ -41,6 +54,7 @@ Options:
   --dir <path>          Working directory (default: current)
   --no-browser          Don't open browser
   --update              Force re-download binaries
+  --yes                 Skip confirmation prompt (uninstall only)
 
   -h, --help            Show this help`);
 }
