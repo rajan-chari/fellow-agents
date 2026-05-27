@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs";
 import http from "http";
 import { join, resolve } from "path";
 import { execSync } from "child_process";
-import { binDir, ptyWinDir, logsDir } from "../lib/paths.js";
+import { binDir, ptyWinDir, logsDir, dataDir } from "../lib/paths.js";
 import { downloadBinaries } from "../lib/download.js";
 import { startEmcomServer, startPtyWin, stopAll, logPath } from "../lib/services.js";
 import { scaffoldWorkspaces, registerAgents, writeHooks } from "../lib/workspaces.js";
@@ -32,6 +32,27 @@ export async function start(opts: StartOptions): Promise<void> {
   console.log("  fellow-agents");
   console.log("  =============");
   console.log("");
+
+  // First-run welcome — show a brief orientation the very first time someone
+  // types `fellow-agents`. Marker lives in dataDir so it survives across
+  // sessions but resets if the user runs `fellow-agents uninstall`.
+  const firstRunMarker = join(dataDir, ".first-run");
+  if (!existsSync(firstRunMarker)) {
+    console.log("  Welcome! This is your first run. Here's what's about to happen:");
+    console.log("");
+    console.log("    [1] Download platform binaries (emcom, tracker, emcom-server)");
+    console.log("    [2] Install pty-win (the browser-based terminal multiplexer)");
+    console.log("    [3] Scaffold three agent workspaces (coder, coordinator, reviewer)");
+    console.log("    [4] Install agent skills into ~/.claude/, ~/.copilot/, ~/.agents/");
+    console.log("    [5] Start emcom-server and pty-win, open the browser UI");
+    console.log("");
+    console.log("  Press Ctrl+C any time to stop. `fellow-agents --help` shows options.");
+    console.log("");
+    try {
+      mkdirSync(dataDir, { recursive: true });
+      writeFileSync(firstRunMarker, new Date().toISOString());
+    } catch {}
+  }
 
   // Auto-create fellow-agents/ subdirectory if CWD doesn't already have workspaces/
   let workDir = resolve(opts.dir);

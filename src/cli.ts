@@ -40,21 +40,33 @@ if (command === "start") {
     yes: hasFlag("--yes"),
   });
 } else {
-  console.log(`fellow-agents — multi-agent system for Claude Code
+  console.log(`fellow-agents — multi-agent system for Claude Code, Copilot CLI, and pi
 
-Usage:
-  fellow-agents [options]            Start services (default)
-  fellow-agents stop                 Stop all running services
-  fellow-agents clean                Wipe cached binaries + pty-win, preserve logs
-  fellow-agents uninstall [--yes]    Remove all fellow-agents state (data dir + workspaces)
+  Multiple AI sessions on one machine, collaborating via email-style
+  messaging (emcom). Type fellow-agents to download binaries, scaffold
+  three sample agents (coder, coordinator, reviewer), and open the
+  browser UI. Each agent runs in its own pty-win pane.
 
-Options:
+Commands:
+  fellow-agents [options]            Start services (the usual command)
+  fellow-agents stop                 Stop running services
+  fellow-agents clean                Wipe cached binaries + pty-win install (preserves logs)
+  fellow-agents uninstall [--yes]    Remove all state, including scaffolded workspaces
+
+Start options:
   --port <number>       pty-win port (default: 3700)
   --emcom-port <number> emcom-server port (default: 8800)
-  --dir <path>          Working directory (default: current)
-  --no-browser          Don't open browser
-  --update              Force re-download binaries
-  --yes                 Skip confirmation prompt (uninstall only)
+  --dir <path>          Working directory for agent workspaces (default: current)
+  --no-browser          Don't open browser after services start
+  --update              Force re-download platform binaries
 
-  -h, --help            Show this help`);
+Uninstall options:
+  --yes                 Actually perform the uninstall (default is dry-run preview)
+  --dir <path>          Workspace location (default: current — use if you ran start elsewhere)
+
+General:
+  -h, --help            Show this help
+
+First time? Just run \`fellow-agents\` and follow the prompts.
+Docs: https://github.com/rajan-chari/fellow-agents`);
 }
