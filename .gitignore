@@ -20,6 +20,7 @@ Claude-KB.md
 tracker.md
 notes.md
 *.png
+!docs/*.png
 .playwright-mcp/
 coverage/
 cost-history.json

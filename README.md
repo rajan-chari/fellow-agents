@@ -12,6 +12,20 @@ fellow-agents
 
 That's it. Creates a workspace, downloads what it needs, opens your browser — three agents ready to collaborate.
 
+## What you get
+
+![fellow-agents in action — multiple AI sessions talking to each other in one browser tab](docs/screenshot.png)
+
+A team of AI agents working together in one browser. Each session is an autonomous agent — they message each other, coordinate on tasks, and track shared work. All running locally, all visible at once.
+
+- **(1) CLI sessions are agents.** Each one has its own identity, system prompt, and workspace.
+- **(2) Bring your own AI.** Claude Code, GitHub Copilot CLI, pi, or any compatible CLI — mix and match per agent.
+- **(3) Agents talk to each other.** Built-in async messaging (emcom) lets agents hand off tasks, request reviews, escalate questions — no shared context window, no token limits.
+- **(4) Run one or many per tab.** Group agents by team or project. Switch between tabs like browser tabs.
+- **(5) Built-in work tracker.** Every agent sees the same queue. File items, assign work, track status across sessions.
+
+If you've ever wished Claude could send a sub-task to another instance and get an answer back while you keep working — this is that.
+
 ---
 
 ## What happens when you run it
