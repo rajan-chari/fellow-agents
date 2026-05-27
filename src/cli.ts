@@ -6,6 +6,7 @@ const args = process.argv.slice(2);
 const command = args[0] === "stop" ? "stop"
   : args[0] === "clean" ? "clean"
   : args[0] === "uninstall" ? "uninstall"
+  : args[0] === "config" ? "config"
   : (args[0] === "--help" || args[0] === "-h") ? "help"
   : "start";
 
@@ -39,6 +40,9 @@ if (command === "start") {
     dir: getFlag("--dir", process.cwd()),
     yes: hasFlag("--yes"),
   });
+} else if (command === "config") {
+  const { config } = await import("./commands/config.js");
+  config(args.slice(1));
 } else {
   console.log(`fellow-agents — multi-agent system for Claude Code, Copilot CLI, and pi
 
@@ -50,8 +54,9 @@ if (command === "start") {
 Commands:
   fellow-agents [options]            Start services (the usual command)
   fellow-agents stop                 Stop running services
-  fellow-agents clean                Wipe cached binaries + pty-win install (preserves logs)
+  fellow-agents clean                Wipe cached binaries + pty-win install (preserves logs and preferences)
   fellow-agents uninstall [--yes]    Remove all state, including scaffolded workspaces
+  fellow-agents config <get|set>     Read or write user preferences (see 'config --help')
 
 Start options:
   --port <number>       pty-win port (default: 3700)
@@ -63,6 +68,10 @@ Start options:
 Uninstall options:
   --yes                 Actually perform the uninstall (default is dry-run preview)
   --dir <path>          Workspace location (default: current — use if you ran start elsewhere)
+
+Config:
+  fellow-agents config get [key]            Print all preferences, or one value
+  fellow-agents config set <key> <value>    Write a preference (e.g. cliPreference claude)
 
 General:
   -h, --help            Show this help

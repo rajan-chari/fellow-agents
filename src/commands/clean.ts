@@ -64,6 +64,7 @@ export function clean(): void {
   console.log("");
   console.log(`  Cleaned ${formatBytes(totalFreed)} from ${dataDir}`);
   console.log(`  Logs preserved at ${join(dataDir, "logs")}`);
+  console.log(`  Preferences preserved at ${join(dataDir, "preferences.json")} (if set)`);
   console.log(`  Run 'fellow-agents' to reinstall.`);
   console.log("");
 }

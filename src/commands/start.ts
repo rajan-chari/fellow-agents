@@ -2,12 +2,20 @@ import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs";
 import http from "http";
 import { join, resolve } from "path";
 import { execSync } from "child_process";
+import * as readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 import { binDir, ptyWinDir, logsDir, dataDir } from "../lib/paths.js";
 import { downloadBinaries } from "../lib/download.js";
 import { startEmcomServer, startPtyWin, stopAll, logPath } from "../lib/services.js";
 import { scaffoldWorkspaces, registerAgents, writeHooks } from "../lib/workspaces.js";
 import { installSkills } from "../lib/skills.js";
 import { binarySuffix } from "../lib/platform.js";
+import {
+  readPreferences,
+  writePreferences,
+  autoDetectClis,
+  lookupCli,
+} from "../lib/preferences.js";
 
 interface StartOptions {
   port: number;
@@ -25,6 +33,81 @@ function nodeInRange(version: string, range: string): boolean {
   const min = minMatch ? parseInt(minMatch[1], 10) : 0;
   const max = maxMatch ? parseInt(maxMatch[1], 10) : Infinity;
   return major >= min && major < max;
+}
+
+/**
+ * First-run CLI preference prompt. Returns the chosen value (bare command or full path),
+ * or null if we should skip (non-interactive, or user declined).
+ *
+ * Design (locked 5/27 with milo):
+ * - Native readline (no inquirer dep — start.ts is a setup pipeline, not a chat UI)
+ * - Auto-detected CLIs from PATH shown as numbered choices, plus a "Custom path" option
+ * - If user types a custom value not on PATH, single confirm: "Use it anyway? [y/N]"
+ * - Non-interactive stdin (CI, piped) → return null, caller logs a hint
+ */
+async function promptForCliPreference(): Promise<string | null> {
+  if (!input.isTTY) return null;
+
+  const detected = autoDetectClis();
+  const rl = readline.createInterface({ input, output });
+
+  try {
+    console.log("");
+    console.log("  Pick your preferred CLI — pty-win's play button will launch this in each new tab.");
+    console.log("  (You can change it later with 'fellow-agents config set cliPreference <name>'.)");
+    console.log("");
+
+    const choices: string[] = [...detected];
+    if (detected.length > 0) {
+      for (let i = 0; i < detected.length; i++) {
+        console.log(`    [${i + 1}] ${detected[i]}`);
+      }
+    } else {
+      console.log("    (None of claude/copilot/pi found on PATH — pick Custom path to specify your own)");
+    }
+    const customIdx = choices.length + 1;
+    console.log(`    [${customIdx}] Custom path or other command`);
+    console.log(`    [s] Skip for now`);
+    console.log("");
+
+    const answer = (await rl.question("  Choice: ")).trim().toLowerCase();
+
+    if (answer === "s" || answer === "skip" || answer === "") {
+      console.log("  Skipped — pty-win will pick a default until you set one.");
+      return null;
+    }
+
+    const num = parseInt(answer, 10);
+    if (!isNaN(num) && num >= 1 && num <= detected.length) {
+      return detected[num - 1];
+    }
+
+    if (!isNaN(num) && num === customIdx) {
+      const value = (await rl.question("  Enter command or full path: ")).trim();
+      if (!value) {
+        console.log("  Empty input — skipped.");
+        return null;
+      }
+      // Confirm step if value doesn't resolve and doesn't look like a path
+      const looksLikePath = value.includes("\\") || value.includes("/");
+      const resolved = lookupCli(value);
+      if (resolved === null && !looksLikePath) {
+        const tool = process.platform === "win32" ? "where.exe" : "which";
+        console.log(`  '${tool} ${value}' returned no matches.`);
+        const confirm = (await rl.question("  Use it anyway? [y/N]: ")).trim().toLowerCase();
+        if (confirm !== "y" && confirm !== "yes") {
+          console.log("  Skipped.");
+          return null;
+        }
+      }
+      return value;
+    }
+
+    console.log(`  Unrecognised choice '${answer}' — skipped.`);
+    return null;
+  } finally {
+    rl.close();
+  }
 }
 
 export async function start(opts: StartOptions): Promise<void> {
@@ -52,6 +135,33 @@ export async function start(opts: StartOptions): Promise<void> {
       mkdirSync(dataDir, { recursive: true });
       writeFileSync(firstRunMarker, new Date().toISOString());
     } catch {}
+  }
+
+  // CLI preference prompt — fires when preferences.json is missing or has no cliPreference.
+  // Independent of the first-run marker so a user who wipes preferences.json (or upgrades from
+  // a pre-0.0.22 install) gets prompted on the next run. Non-interactive sessions skip silently.
+  const existingPrefs = readPreferences();
+  if (existingPrefs === null || !existingPrefs.cliPreference) {
+    const chosen = await promptForCliPreference();
+    if (chosen) {
+      try {
+        writePreferences({
+          ...(existingPrefs ?? {}),
+          cliPreference: chosen,
+          updatedBy: "first-run-prompt",
+        });
+        console.log(`  CLI preference set: ${chosen}`);
+        console.log("");
+      } catch (err: any) {
+        console.error(`  Failed to write preferences: ${err.message}`);
+        console.error(`  Continuing without a stored preference.`);
+        console.log("");
+      }
+    } else if (!input.isTTY) {
+      console.log("  (non-interactive — skipping CLI preference setup)");
+      console.log(`  Set later with: fellow-agents config set cliPreference <name-or-path>`);
+      console.log("");
+    }
   }
 
   // Auto-create fellow-agents/ subdirectory if CWD doesn't already have workspaces/
