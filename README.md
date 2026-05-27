@@ -14,7 +14,7 @@ That's it. Creates a workspace, downloads what it needs, opens your browser — 
 
 ## What you get
 
-![fellow-agents in action — multiple AI sessions talking to each other in one browser tab](docs/screenshot.png)
+![fellow-agents in action — multiple AI sessions talking to each other in one browser tab](https://raw.githubusercontent.com/rajan-chari/fellow-agents/main/docs/screenshot.png)
 
 A team of AI agents working together in one browser. Each session is an autonomous agent — they message each other, coordinate on tasks, and track shared work. All running locally, all visible at once.
 
