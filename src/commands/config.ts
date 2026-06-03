@@ -3,6 +3,7 @@ import {
   writePreferences,
   lookupCli,
   preferencesFile,
+  stripMatchedQuotes,
   KNOWN_KEYS,
   type KnownKey,
 } from "../lib/preferences.js";
@@ -96,7 +97,7 @@ function handleSet(args: string[]): void {
   }
 
   const key = args[0];
-  const value = args.slice(1).join(" ");
+  const value = stripMatchedQuotes(args.slice(1).join(" ").trim()).trim();
 
   if (!isKnownKey(key)) {
     console.error(`Unknown key: ${key}`);

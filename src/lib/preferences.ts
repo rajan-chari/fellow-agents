@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync, unlinkSync } from "fs";
 import { join } from "path";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { dataDir } from "./paths.js";
 
 /** ~/.fellow-agents/preferences.json */
@@ -82,16 +82,39 @@ export function readPreferences(): Preferences | null {
 }
 
 /**
+ * Strip a single pair of matched leading/trailing single or double quotes.
+ * Defensive helper for user inputs where a shell-style quoted value
+ * (`'agency cp'` or `"agency cp"`) gets typed literally — e.g. into a
+ * readline prompt or a config-set value after the outer shell has already
+ * consumed its own quote layer.
+ *
+ * Unmatched, mixed, or absent quotes pass through unchanged.
+ */
+export function stripMatchedQuotes(s: string): string {
+  if (s.length < 2) return s;
+  const first = s[0];
+  const last = s[s.length - 1];
+  if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+    return s.slice(1, -1);
+  }
+  return s;
+}
+
+/**
  * Write preferences atomically (temp + renameSync — atomic on Windows from Node 10+).
  * Always stamps `updatedAt` to now and `updatedBy` to the supplied value.
  * Ensures dataDir exists. Cleans up the temp file on failure.
+ *
+ * Preserves forward-compat keys from `prefs` that aren't in the current
+ * Preferences type — callers spreading an existing file with future schema:2
+ * fields can rely on those fields surviving a schema:1-aware writer.
  */
 export function writePreferences(prefs: Omit<Preferences, "schema" | "updatedAt"> & { schema?: number; updatedBy: UpdatedBy }): Preferences {
   mkdirSync(dataDir, { recursive: true });
 
   const next: Preferences = {
+    ...prefs,
     schema: prefs.schema ?? CURRENT_SCHEMA,
-    cliPreference: prefs.cliPreference,
     updatedAt: new Date().toISOString(),
     updatedBy: prefs.updatedBy,
   };
@@ -110,12 +133,18 @@ export function writePreferences(prefs: Omit<Preferences, "schema" | "updatedAt"
 
 /**
  * Look up a CLI on PATH. Returns the resolved full path (first hit), or null if not found.
- * Uses `where.exe` on Windows and `which -a` on Unix. Never throws.
+ * Uses `where.exe` on Windows and `which` on Unix. Never throws.
+ *
+ * Uses execFileSync with shell: false so user-controlled `name` values
+ * (e.g. a cliPreference set by config-set) cannot inject shell metacharacters.
+ * Values containing spaces or shell-special chars (`;`, `&`, `|`, `$`, etc.) are
+ * passed verbatim as a single argv to where.exe/which — which will simply not
+ * find a match and return null, rather than execute arbitrary commands.
  */
 export function lookupCli(name: string): string | null {
-  const cmd = process.platform === "win32" ? `where.exe ${name}` : `which ${name}`;
+  const bin = process.platform === "win32" ? "where.exe" : "which";
   try {
-    const out = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] })
+    const out = execFileSync(bin, [name], { stdio: ["ignore", "pipe", "ignore"] })
       .toString()
       .split(/\r?\n/)
       .map((s) => s.trim())

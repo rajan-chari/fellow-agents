@@ -15,6 +15,7 @@ import {
   writePreferences,
   autoDetectClis,
   lookupCli,
+  stripMatchedQuotes,
 } from "../lib/preferences.js";
 
 interface StartOptions {
@@ -83,7 +84,8 @@ async function promptForCliPreference(): Promise<string | null> {
     }
 
     if (!isNaN(num) && num === customIdx) {
-      const value = (await rl.question("  Enter command or full path: ")).trim();
+      const raw = (await rl.question("  Enter command or full path: ")).trim();
+      const value = stripMatchedQuotes(raw).trim();
       if (!value) {
         console.log("  Empty input — skipped.");
         return null;
