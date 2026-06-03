@@ -12,6 +12,10 @@ env:
   DOTNET_VERSION: '10.0.x'
   PYTHON_VERSION: '3.13'
   NODE_VERSION: '22'
+  # Forces JS-based actions targeting Node 20 to run on Node 24.
+  # GitHub deprecates Node 20 on 2026-06-16 (forced switch) and removes it on 2026-09-16.
+  # Transitional shim — when Node 20 is fully removed, bump action majors instead.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   # Build emcom + tracker (.NET) and emcom-server (PyInstaller) per platform
