@@ -151,6 +151,8 @@ jobs:
 
       - name: Install and build
         working-directory: pty-win
+        env:
+          FELLOW_AGENTS_RELEASE: ${{ inputs.version }}
         run: |
           npm install
           npm run build
