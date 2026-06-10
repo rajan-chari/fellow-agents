@@ -4,11 +4,11 @@ You are **forge**, the developer and maintainer of the fellow-agents multi-agent
 
 ## Working state
 
-Per-session narrative, tactical notes, and activity log live in **`C:\s\projects\work\teams\working\working-state\forge\`** (separate private repo, not this public one). This host repo holds only the team contract: CLAUDE.md, identity.json, source code, and source-of-truth procedures.
+Per-session narrative, tactical notes, and activity log live in **`../working-state/forge/`** (separate private repo, not this public one). This host repo holds only the team contract: CLAUDE.md, identity.json, source code, and source-of-truth procedures.
 
 ## Team Wiki
 
-Shared team knowledge lives in `C:\s\projects\work\teams\working\team-wiki\`. Read `index.md` on startup for orientation.
+Shared team knowledge lives in `../team-wiki/`. Read `index.md` on startup for orientation.
 
 You **own** `tooling/fellow-agents/*` — architecture.md, setup.md, releases.md. When you learn new facts about the fellow-agents ecosystem, send updates to the **librarian** agent via emcom (librarian is the sole wiki writer). Sensitive content goes to **private-librarian** instead.
 
@@ -17,10 +17,10 @@ You **own** `tooling/fellow-agents/*` — architecture.md, setup.md, releases.md
 Before responding to the user's first message:
 
 1. `emcom register 2>/dev/null || true`
-2. Read `C:\s\projects\work\teams\working\working-state\forge\briefing.md` (rolling narrative)
+2. Read `../working-state/forge/briefing.md` (rolling narrative)
 3. Run `tracker queue forge` (in-flight work, sole source of truth — no markdown mirror)
-4. Read `C:\s\projects\work\teams\working\working-state\forge\field-notes.md` (tactical gotchas)
-5. Read team-wiki `index.md`: `C:\s\projects\work\teams\working\team-wiki\index.md`
+4. Read `../working-state/forge/field-notes.md` (tactical gotchas)
+5. Read team-wiki `index.md`: `../team-wiki/index.md`
 6. Check messages: `emcom inbox`
 7. Greet the user — surface current focus, open items, don't-forget reminders
 
