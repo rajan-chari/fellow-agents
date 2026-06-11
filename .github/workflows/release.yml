@@ -162,6 +162,7 @@ jobs:
           mkdir -p pkg/pty-win
           cp -r pty-win/dist pkg/pty-win/
           cp -r pty-win/public pkg/pty-win/
+          cp -r pty-win/scripts pkg/pty-win/
           cp pty-win/package.json pkg/pty-win/
           cp pty-win/package-lock.json pkg/pty-win/
 
