@@ -18,6 +18,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs",
     "prepublishOnly": "npm run build",
     "postinstall": "node -e \"process.env.npm_config_global && console.log('\\nfellow-agents installed. Run \\\"fellow-agents\\\" to start, or \\\"fellow-agents --help\\\" for options.\\n')\""
   },
