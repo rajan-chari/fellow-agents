@@ -19,31 +19,11 @@ function hasFlag(name: string): boolean {
   return args.includes(name);
 }
 
-if (command === "start") {
-  const { start } = await import("./commands/start.js");
-  await start({
-    port: parseInt(getFlag("--port", "3700"), 10),
-    emcomPort: parseInt(getFlag("--emcom-port", "8800"), 10),
-    dir: getFlag("--dir", process.cwd()),
-    noBrowser: hasFlag("--no-browser"),
-    update: hasFlag("--update"),
-  });
-} else if (command === "stop") {
-  const { stop } = await import("./commands/stop.js");
-  stop();
-} else if (command === "clean") {
-  const { clean } = await import("./commands/clean.js");
-  clean();
-} else if (command === "uninstall") {
-  const { uninstall } = await import("./commands/uninstall.js");
-  uninstall({
-    dir: getFlag("--dir", process.cwd()),
-    yes: hasFlag("--yes"),
-  });
-} else if (command === "config") {
-  const { config } = await import("./commands/config.js");
-  config(args.slice(1));
-} else {
+function wantsHelp(rest: string[]): boolean {
+  return rest.includes("--help") || rest.includes("-h");
+}
+
+function printHelp(): void {
   console.log(`fellow-agents — multi-agent system for Claude Code, Copilot CLI, and pi
 
   Multiple AI sessions on one machine, collaborating via email-style
@@ -78,4 +58,86 @@ General:
 
 First time? Just run \`fellow-agents\` and follow the prompts.
 Docs: https://github.com/rajan-chari/fellow-agents`);
+}
+
+function printCommandHelp(cmd: string): void {
+  if (cmd === "stop") {
+    console.log(`Usage: fellow-agents stop
+
+Stop running fellow-agents services (emcom-server and pty-win).
+
+Options:
+  -h, --help    Show this help`);
+    return;
+  }
+
+  if (cmd === "clean") {
+    console.log(`Usage: fellow-agents clean
+
+Stop services and wipe cached binaries, the pty-win install, and PID files.
+Preserves logs and preferences.
+
+Options:
+  -h, --help    Show this help`);
+    return;
+  }
+
+  if (cmd === "uninstall") {
+    console.log(`Usage: fellow-agents uninstall [--yes] [--dir <path>]
+
+Preview or remove all fellow-agents state, including scaffolded workspaces.
+Without --yes this is a dry-run preview.
+
+Options:
+  --yes         Actually perform the uninstall
+  --dir <path>  Workspace location (default: current)
+  -h, --help    Show this help`);
+    return;
+  }
+
+  printHelp();
+}
+
+if (command === "start") {
+  if (wantsHelp(args)) {
+    printHelp();
+    process.exit(0);
+  }
+  const { start } = await import("./commands/start.js");
+  await start({
+    port: parseInt(getFlag("--port", "3700"), 10),
+    emcomPort: parseInt(getFlag("--emcom-port", "8800"), 10),
+    dir: getFlag("--dir", process.cwd()),
+    noBrowser: hasFlag("--no-browser"),
+    update: hasFlag("--update"),
+  });
+} else if (command === "stop") {
+  if (wantsHelp(args.slice(1))) {
+    printCommandHelp("stop");
+    process.exit(0);
+  }
+  const { stop } = await import("./commands/stop.js");
+  stop();
+} else if (command === "clean") {
+  if (wantsHelp(args.slice(1))) {
+    printCommandHelp("clean");
+    process.exit(0);
+  }
+  const { clean } = await import("./commands/clean.js");
+  clean();
+} else if (command === "uninstall") {
+  if (wantsHelp(args.slice(1))) {
+    printCommandHelp("uninstall");
+    process.exit(0);
+  }
+  const { uninstall } = await import("./commands/uninstall.js");
+  uninstall({
+    dir: getFlag("--dir", process.cwd()),
+    yes: hasFlag("--yes"),
+  });
+} else if (command === "config") {
+  const { config } = await import("./commands/config.js");
+  config(args.slice(1));
+} else {
+  printHelp();
 }
