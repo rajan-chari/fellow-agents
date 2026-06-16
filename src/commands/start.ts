@@ -6,7 +6,7 @@ import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { binDir, ptyWinDir, logsDir, dataDir } from "../lib/paths.js";
 import { downloadBinaries } from "../lib/download.js";
-import { startEmcomServer, startPtyWin, stopAll, logPath } from "../lib/services.js";
+import { startEmcomServer, startPtyWin, stopAll, logPath, waitForHealth } from "../lib/services.js";
 import { scaffoldWorkspaces, registerAgents, writeHooks } from "../lib/workspaces.js";
 import { installSkills } from "../lib/skills.js";
 import { binarySuffix } from "../lib/platform.js";
@@ -34,6 +34,61 @@ function nodeInRange(version: string, range: string): boolean {
   const min = minMatch ? parseInt(minMatch[1], 10) : 0;
   const max = maxMatch ? parseInt(maxMatch[1], 10) : Infinity;
   return major >= min && major < max;
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+function printStartFailureAdvice(context: "download" | "emcom-server" | "pty-win" | "pty-win-install", opts: StartOptions): void {
+  console.error("");
+  console.error("  Troubleshooting:");
+  if (context === "download") {
+    console.error("    - Run 'fellow-agents status' to inspect cached release and binary paths.");
+    console.error("    - Retry with 'fellow-agents --update' after confirming network/GitHub access.");
+    console.error("    - If the cache looks stale or partial, run 'fellow-agents clean' and then 'fellow-agents'.");
+  } else if (context === "pty-win-install") {
+    console.error(`    - Check the pty-win log path: ${logPath("pty-win")}`);
+    console.error(`    - Retry after 'fellow-agents clean' if node_modules is partial or stale.`);
+    console.error(`    - Run 'fellow-agents status' to inspect Node version and pty-win build info.`);
+  } else {
+    const service = context === "emcom-server" ? "emcom-server" : "pty-win";
+    const port = context === "emcom-server" ? opts.emcomPort : opts.port;
+    console.error(`    - Check logs: ${logPath(service)}`);
+    console.error(`    - If port ${port} is busy, run 'fellow-agents stop' or retry with ${context === "emcom-server" ? "--emcom-port" : "--port"} <number>.`);
+    console.error("    - Run 'fellow-agents status' to inspect service health, PIDs, and PATH resolution.");
+  }
+  console.error("");
+}
+
+export function formatSetupComplete(opts: {
+  browserUrl: string;
+  emcomUrl: string;
+  workspaceRoot: string;
+  cliPreference: string | null;
+  logDir: string;
+}): string {
+  const cliPreference = opts.cliPreference?.trim() ? opts.cliPreference : "(unset; configure with fellow-agents config set cliPreference <name-or-path>)";
+  return [
+    "",
+    "  Setup complete!",
+    `  Browser UI:      ${opts.browserUrl}`,
+    `  emcom API:       ${opts.emcomUrl}`,
+    `  Workspace root:  ${opts.workspaceRoot}`,
+    `  CLI preference:  ${cliPreference}`,
+    `  Logs:            ${opts.logDir}`,
+    "",
+    "  Useful commands:",
+    "    fellow-agents stop                         Stop emcom-server and pty-win",
+    "    fellow-agents clean                        Reinstall cached binaries/pty-win next run; preserves logs and preferences",
+    "    fellow-agents --update                     Force re-download release assets",
+    "    fellow-agents config get cliPreference     Show the CLI launched by pty-win",
+    "    fellow-agents config set cliPreference <v> Set the CLI launched by pty-win",
+    "    fellow-agents status                       Read-only troubleshooting diagnostics",
+    "",
+    "  Press Ctrl+C to stop all services.",
+    "",
+  ].join("\n");
 }
 
 /**
@@ -143,6 +198,7 @@ export async function start(opts: StartOptions): Promise<void> {
   // Independent of the first-run marker so a user who wipes preferences.json (or upgrades from
   // a pre-0.0.22 install) gets prompted on the next run. Non-interactive sessions skip silently.
   const existingPrefs = readPreferences();
+  let activeCliPreference = existingPrefs?.cliPreference ?? null;
   if (existingPrefs === null || !existingPrefs.cliPreference) {
     const chosen = await promptForCliPreference();
     if (chosen) {
@@ -152,6 +208,7 @@ export async function start(opts: StartOptions): Promise<void> {
           cliPreference: chosen,
           updatedBy: "first-run-prompt",
         });
+        activeCliPreference = chosen;
         console.log(`  CLI preference set: ${chosen}`);
         console.log("");
       } catch (err: any) {
@@ -199,9 +256,10 @@ export async function start(opts: StartOptions): Promise<void> {
   try {
     await downloadBinaries(opts.update);
   } catch (err) {
-    console.error(`  Download failed: ${err}`);
+    console.error(`  Download failed: ${errorMessage(err)}`);
+    printStartFailureAdvice("download", opts);
     if (!existsSync(join(binDir, `emcom${binarySuffix()}`))) {
-      console.error("  No cached binaries available. Check your internet connection.");
+      console.error("  No cached binaries available, so setup cannot continue.");
       process.exit(1);
     }
     console.log("  Using cached binaries");
@@ -212,6 +270,7 @@ export async function start(opts: StartOptions): Promise<void> {
   const ptyPkgPath = join(ptyWinDir, "package.json");
   if (!existsSync(ptyPkgPath)) {
     console.error("  pty-win not found — download may have failed");
+    printStartFailureAdvice("download", opts);
     process.exit(1);
   }
 
@@ -231,8 +290,8 @@ export async function start(opts: StartOptions): Promise<void> {
     try {
       execSync("npm install --omit=dev", { cwd: ptyWinDir, stdio: "inherit" });
     } catch (err: any) {
-      console.error(`  pty-win install failed — see output above`);
-      console.error(`  Logs will be written to: ${logPath("pty-win")}`);
+      console.error(`  pty-win install failed: ${errorMessage(err)}`);
+      printStartFailureAdvice("pty-win-install", opts);
       process.exit(1);
     }
   }
@@ -266,6 +325,10 @@ export async function start(opts: StartOptions): Promise<void> {
   // 6. Start emcom-server
   console.log("[6/8] Starting emcom-server...");
   const emcomPid = startEmcomServer(opts.emcomPort, env);
+  if (emcomPid < 0) {
+    printStartFailureAdvice("emcom-server", opts);
+    process.exit(1);
+  }
   console.log(`  emcom-server started (pid ${emcomPid})`);
 
   // Wait for health
@@ -287,7 +350,7 @@ export async function start(opts: StartOptions): Promise<void> {
     console.log(`  emcom-server running on :${opts.emcomPort}`);
   } else {
     console.error(`  Warning: emcom-server health check failed — it may not be running`);
-    console.error(`  Check logs: ${logPath("emcom-server")}`);
+    printStartFailureAdvice("emcom-server", opts);
   }
 
   // 7. Register agents
@@ -297,8 +360,21 @@ export async function start(opts: StartOptions): Promise<void> {
 
   // 8. Start pty-win
   console.log("[8/8] Starting pty-win...");
+  const ptyMain = join(ptyWinDir, "dist", "index.js");
+  if (!existsSync(ptyMain)) {
+    console.error(`  pty-win entrypoint not found at ${ptyMain}`);
+    printStartFailureAdvice("download", opts);
+    process.exit(1);
+  }
   const ptyPid = startPtyWin(opts.port, workspacesDir, emcomUrl, env);
   console.log(`  pty-win started (pid ${ptyPid})`);
+  const ptyHealthy = await waitForHealth(`http://127.0.0.1:${opts.port}/`, 30_000);
+  if (ptyHealthy) {
+    console.log(`  pty-win running on :${opts.port}`);
+  } else {
+    console.error(`  Warning: pty-win health check failed — browser UI may not be ready`);
+    printStartFailureAdvice("pty-win", opts);
+  }
 
   // Open browser
   if (!opts.noBrowser) {
@@ -312,14 +388,13 @@ export async function start(opts: StartOptions): Promise<void> {
     }, 2000);
   }
 
-  console.log("");
-  console.log("  Setup complete!");
-  console.log(`  pty-win:      http://127.0.0.1:${opts.port}`);
-  console.log(`  emcom-server: ${emcomUrl}`);
-  console.log(`  logs:         ${logsDir}`);
-  console.log("");
-  console.log("  Press Ctrl+C to stop all services.");
-  console.log("");
+  console.log(formatSetupComplete({
+    browserUrl: `http://127.0.0.1:${opts.port}`,
+    emcomUrl,
+    workspaceRoot: workspacesDir,
+    cliPreference: activeCliPreference,
+    logDir: logsDir,
+  }));
 
   // Wait for Ctrl+C
   process.on("SIGINT", () => {

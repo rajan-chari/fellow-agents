@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import test from "node:test";
+import { formatSetupComplete } from "../dist/commands/start.js";
 
 const cli = join(process.cwd(), "dist", "cli.js");
 
@@ -66,4 +67,25 @@ test("doctor is an alias for read-only status diagnostics", () => {
   assert.equal(result.status, 0);
   assert.match(result.stdout, /fellow-agents status/);
   assert.match(result.stdout, /This command is read-only/);
+});
+
+test("setup success output includes lifecycle and troubleshooting commands", () => {
+  const output = formatSetupComplete({
+    browserUrl: "http://127.0.0.1:3700",
+    emcomUrl: "http://127.0.0.1:8800",
+    workspaceRoot: "C:\\work\\team\\workspaces",
+    cliPreference: "copilot",
+    logDir: "C:\\Users\\me\\.fellow-agents\\logs",
+  });
+
+  assert.match(output, /Browser UI:\s+http:\/\/127\.0\.0\.1:3700/);
+  assert.match(output, /emcom API:\s+http:\/\/127\.0\.0\.1:8800/);
+  assert.match(output, /Workspace root:\s+C:\\work\\team\\workspaces/);
+  assert.match(output, /CLI preference:\s+copilot/);
+  assert.match(output, /Logs:\s+C:\\Users\\me\\.fellow-agents\\logs/);
+  assert.match(output, /fellow-agents stop/);
+  assert.match(output, /fellow-agents clean/);
+  assert.match(output, /fellow-agents --update/);
+  assert.match(output, /fellow-agents config get cliPreference/);
+  assert.match(output, /fellow-agents status/);
 });

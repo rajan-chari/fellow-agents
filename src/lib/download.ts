@@ -13,6 +13,11 @@ function httpsGet(url: string): Promise<string> {
       if (res.statusCode === 301 || res.statusCode === 302) {
         return httpsGet(res.headers.location!).then(resolve, reject);
       }
+      if (res.statusCode !== 200) {
+        res.resume();
+        reject(new Error(`GET ${url} returned HTTP ${res.statusCode}`));
+        return;
+      }
       let data = "";
       res.on("data", (chunk) => (data += chunk));
       res.on("end", () => resolve(data));
@@ -26,6 +31,11 @@ function httpsDownload(url: string, dest: string): Promise<void> {
     get(url, { headers: { "User-Agent": "fellow-agents-cli" } }, (res) => {
       if (res.statusCode === 301 || res.statusCode === 302) {
         return httpsDownload(res.headers.location!, dest).then(resolve, reject);
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        reject(new Error(`download ${url} returned HTTP ${res.statusCode}`));
+        return;
       }
       const file = createWriteStream(dest);
       res.pipe(file);
@@ -63,8 +73,15 @@ export async function downloadBinaries(force: boolean = false): Promise<string> 
 
   console.log(`  Downloading release ${tag}...`);
   const platform = detectPlatform();
+  const matchingAssets = release.assets.filter((asset) => asset.name.includes(platform) || asset.name.includes("pty-win"));
+  if (!matchingAssets.some((asset) => asset.name.includes(platform))) {
+    throw new Error(`release ${tag} is missing platform asset for ${platform}`);
+  }
+  if (!matchingAssets.some((asset) => asset.name.includes("pty-win"))) {
+    throw new Error(`release ${tag} is missing pty-win asset`);
+  }
 
-  for (const asset of release.assets) {
+  for (const asset of matchingAssets) {
     if (asset.name.includes(platform)) {
       console.log(`  Downloading ${asset.name}...`);
       const dest = join(dataDir, asset.name);

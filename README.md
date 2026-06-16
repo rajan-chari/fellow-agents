@@ -31,9 +31,11 @@ If you've ever wished Claude could send a sub-task to another instance and get a
 ## What happens when you run it
 
 1. Downloads platform binaries (first run only, ~30 seconds)
-2. Starts the messaging server (emcom)
-3. Registers three agents: **coordinator**, **coder**, **reviewer**
-4. Launches the browser UI (pty-win) on `http://localhost:3700`
+2. Installs pty-win dependencies
+3. Scaffolds `workspaces/` with three agents: **coordinator**, **coder**, **reviewer**
+4. Installs bundled skills for supported AI CLIs
+5. Starts the messaging server (emcom) on `http://127.0.0.1:8800`
+6. Registers agents, configures hooks, and launches pty-win on `http://127.0.0.1:3700`
 
 Each agent is a Claude Code session with its own workspace, personality, and tools. They message each other through emcom — no shared context window, no token limits, real async collaboration.
 
@@ -80,7 +82,14 @@ fellow-agents --port 4000               # custom pty-win port
 fellow-agents --emcom-port 9000         # custom messaging port
 fellow-agents --no-browser              # headless (server/CI)
 fellow-agents --update                  # force re-download binaries
+fellow-agents status                    # read-only diagnostics
+fellow-agents doctor                    # alias for status
+fellow-agents config get cliPreference  # show preferred CLI for pty-win tabs
+fellow-agents config set cliPreference claude
 fellow-agents stop                      # stop all services
+fellow-agents clean                     # wipe cached binaries/pty-win install; preserve logs/preferences
+fellow-agents uninstall                 # dry-run removal preview
+fellow-agents uninstall --yes           # remove state/workspaces and fellow-agents-owned skills
 ```
 
 ## Add your own agent
@@ -124,6 +133,7 @@ Same result, more control. Useful for development or Docker.
   pty-win/                     # Terminal multiplexer
   logs/                        # Service logs (check here if something fails)
   pid/                         # PID files
+  preferences.json             # User preferences, including cliPreference
 
 ./workspaces/                  # Scaffolded from templates on first run
   coordinator/CLAUDE.md        # "Break tasks down, delegate to coder/reviewer"
@@ -133,13 +143,17 @@ Same result, more control. Useful for development or Docker.
 
 ## Troubleshooting
 
-**Services won't start?** Check `~/.fellow-agents/logs/emcom-server.log` and `pty-win.log`.
+**Services won't start?** Run `fellow-agents status` to inspect cached versions, service health, PIDs, PATH resolution, workspace identities, hooks, and skill roots. Also check `~/.fellow-agents/logs/emcom-server.log` and `pty-win.log`.
 
-**Port already in use?** Use `--port` and `--emcom-port` to pick different ports.
+**Port already in use?** Run `fellow-agents stop`, or use `--port` and `--emcom-port` to pick different ports.
 
-**Browser didn't open?** Navigate to `http://localhost:3700` manually.
+**Browser didn't open?** Navigate to `http://127.0.0.1:3700` manually.
 
-**Want to start fresh?** `rm -rf ~/.fellow-agents` and run `fellow-agents start` again.
+**Wrong CLI launches in a tab?** Run `fellow-agents config get cliPreference`, then set it with `fellow-agents config set cliPreference <name-or-path>`.
+
+**Cached binaries look stale?** Run `fellow-agents --update` to force a re-download. If the cache is partial or broken, run `fellow-agents clean`; this preserves logs and preferences but removes cached binaries, pty-win, and PID files.
+
+**Want to remove everything?** Run `fellow-agents uninstall` to preview, then `fellow-agents uninstall --yes` to remove state, scaffolded workspaces, and fellow-agents-owned skill files. To remove the npm package itself, run `npm uninstall -g fellow-agents`.
 
 ## License
 
