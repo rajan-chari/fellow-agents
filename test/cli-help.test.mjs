@@ -51,3 +51,19 @@ test("config --help remains mutation-safe", () => {
   assert.equal(result.status, 0);
   assert.match(result.stdout, /fellow-agents config — read or write user preferences/);
 });
+
+test("status --help prints diagnostics help", () => {
+  const result = run(["status", "--help"]);
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /Usage: fellow-agents status/);
+  assert.match(result.stdout, /read-only diagnostics/);
+});
+
+test("doctor is an alias for read-only status diagnostics", () => {
+  const result = run(["doctor", "--port", "1", "--emcom-port", "1"]);
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /fellow-agents status/);
+  assert.match(result.stdout, /This command is read-only/);
+});

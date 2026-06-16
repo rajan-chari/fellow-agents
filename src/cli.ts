@@ -7,6 +7,7 @@ const command = args[0] === "stop" ? "stop"
   : args[0] === "clean" ? "clean"
   : args[0] === "uninstall" ? "uninstall"
   : args[0] === "config" ? "config"
+  : (args[0] === "status" || args[0] === "doctor") ? "status"
   : (args[0] === "--help" || args[0] === "-h") ? "help"
   : "start";
 
@@ -37,6 +38,7 @@ Commands:
   fellow-agents clean                Wipe cached binaries + pty-win install (preserves logs and preferences)
   fellow-agents uninstall [--yes]    Remove all state, including scaffolded workspaces
   fellow-agents config <get|set>     Read or write user preferences (see 'config --help')
+  fellow-agents status               Read-only diagnostics (alias: doctor)
 
 Start options:
   --port <number>       pty-win port (default: 3700)
@@ -95,6 +97,20 @@ Options:
     return;
   }
 
+  if (cmd === "status" || cmd === "doctor") {
+    console.log(`Usage: fellow-agents ${cmd} [--port <number>] [--emcom-port <number>] [--dir <path>]
+
+Print read-only diagnostics for installed assets, services, preferences,
+workspace identities, hooks, skills, and PATH resolution.
+
+Options:
+  --port <number>        pty-win port to check (default: 3700)
+  --emcom-port <number>  emcom-server port to check (default: 8800)
+  --dir <path>           Workspace location (default: current)
+  -h, --help             Show this help`);
+    return;
+  }
+
   printHelp();
 }
 
@@ -138,6 +154,17 @@ if (command === "start") {
 } else if (command === "config") {
   const { config } = await import("./commands/config.js");
   config(args.slice(1));
+} else if (command === "status") {
+  if (wantsHelp(args.slice(1))) {
+    printCommandHelp(args[0] ?? "status");
+    process.exit(0);
+  }
+  const { status } = await import("./commands/status.js");
+  await status({
+    port: parseInt(getFlag("--port", "3700"), 10),
+    emcomPort: parseInt(getFlag("--emcom-port", "8800"), 10),
+    dir: getFlag("--dir", process.cwd()),
+  });
 } else {
   printHelp();
 }
