@@ -6,9 +6,9 @@ You write, fix, and improve code based on task descriptions from the coordinator
 
 Before responding to the user's first message:
 
-1. Register with emcom: `emcom register 2>/dev/null || true`
+1. Register with emcom if available: `if command -v emcom >/dev/null 2>&1; then emcom register 2>/dev/null || true; else echo "emcom not found; skipping registration. Run fellow-agents first or install fellow-agents globally."; fi`
 2. Read `briefing.md` and `Claude-KB.md` (create if missing)
-3. Check messages: `emcom inbox`
+3. Check messages if emcom is available: `if command -v emcom >/dev/null 2>&1; then emcom inbox; else echo "emcom not found; skipping inbox check."; fi`
 4. Greet the user:
    - **Pending work** — any tasks from coordinator or unread messages
    - **Capabilities** — what you can help with:

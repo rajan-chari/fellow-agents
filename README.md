@@ -185,6 +185,10 @@ Same result, more control. Useful for development or Docker.
 
 **Wrong CLI launches in a tab?** Run `fellow-agents config get cliPreference`, then set it with `fellow-agents config set cliPreference <name-or-path>`.
 
+**Agent startup says `emcom: command not found`?** Re-run `fellow-agents` so the bundled emcom/tracker binaries are downloaded and added to the pty-win session PATH. New scaffolded agent templates skip registration/inbox checks gracefully when `emcom` is unavailable instead of failing startup.
+
+**Play button says "Failed to create session"?** Check `fellow-agents status` and `~/.fellow-agents/logs/pty-win.log`. If no AI CLI is installed or `cliPreference` points at a missing command, install Claude Code/Copilot/pi or run `fellow-agents config set cliPreference <name-or-path>`.
+
 **Cached binaries look stale?** Run `fellow-agents --update` to force a re-download. If the cache is partial or broken, run `fellow-agents clean`; this preserves logs and preferences but removes cached binaries, pty-win, and PID files.
 
 **Want to remove everything?** Run `fellow-agents uninstall` to preview, then `fellow-agents uninstall --yes` to remove state, scaffolded workspaces, and fellow-agents-owned skill files. To remove the npm package itself, run `npm uninstall -g fellow-agents`.

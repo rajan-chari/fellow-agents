@@ -40,6 +40,31 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+function looksLikePath(value: string): boolean {
+  return value.includes("\\") || value.includes("/");
+}
+
+function printCliLaunchWarning(cliPreference: string | null): void {
+  const preference = cliPreference?.trim() ?? "";
+  if (preference) {
+    const resolved = lookupCli(preference);
+    if (resolved || (looksLikePath(preference) && existsSync(preference))) return;
+    console.error(`  WARNING: configured CLI preference '${preference}' does not resolve.`);
+    console.error("  Agent play buttons may fail to create sessions until that command is installed or updated.");
+    console.error("  Fix: fellow-agents config set cliPreference <name-or-path>");
+    return;
+  }
+
+  if (autoDetectClis().length > 0) return;
+  console.error("  WARNING: no supported AI CLI found on PATH and no CLI preference is configured.");
+  console.error("  pty-win can start, but agent play buttons cannot create sessions until a CLI is installed.");
+  console.error("  Install Claude Code/Copilot/pi, or run: fellow-agents config set cliPreference <name-or-path>");
+}
+
+export const __test__ = {
+  printCliLaunchWarning,
+};
+
 function printStartFailureAdvice(context: "download" | "emcom-server" | "pty-win" | "pty-win-install", opts: StartOptions): void {
   console.error("");
   console.error("  Troubleshooting:");
@@ -146,9 +171,8 @@ async function promptForCliPreference(): Promise<string | null> {
         return null;
       }
       // Confirm step if value doesn't resolve and doesn't look like a path
-      const looksLikePath = value.includes("\\") || value.includes("/");
       const resolved = lookupCli(value);
-      if (resolved === null && !looksLikePath) {
+      if (resolved === null && !looksLikePath(value)) {
         const tool = process.platform === "win32" ? "where.exe" : "which";
         console.log(`  '${tool} ${value}' returned no matches.`);
         const confirm = (await rl.question("  Use it anyway? [y/N]: ")).trim().toLowerCase();
@@ -250,6 +274,7 @@ export async function start(opts: StartOptions): Promise<void> {
   } catch {
     console.log("  Claude Code not found (optional — install from https://claude.ai/code)");
   }
+  printCliLaunchWarning(activeCliPreference);
 
   // 2. Download binaries
   console.log("[2/8] Downloading binaries...");

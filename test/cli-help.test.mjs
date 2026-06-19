@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { formatSetupComplete } from "../dist/commands/start.js";
+import { __test__, formatSetupComplete } from "../dist/commands/start.js";
 
 const cli = join(process.cwd(), "dist", "cli.js");
 
@@ -121,4 +121,17 @@ test("setup success output includes lifecycle and troubleshooting commands", () 
   assert.match(output, /fellow-agents --update/);
   assert.match(output, /fellow-agents config get cliPreference/);
   assert.match(output, /fellow-agents status/);
+});
+
+test("CLI launch warning trims configured preference before resolving it", () => {
+  const originalError = console.error;
+  const messages = [];
+  console.error = (message) => messages.push(String(message));
+  try {
+    __test__.printCliLaunchWarning(`  ${process.execPath}  `);
+  } finally {
+    console.error = originalError;
+  }
+
+  assert.deepEqual(messages, []);
 });
