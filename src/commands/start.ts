@@ -45,10 +45,11 @@ function looksLikePath(value: string): boolean {
 }
 
 function printCliLaunchWarning(cliPreference: string | null): void {
-  if (cliPreference?.trim()) {
-    const resolved = lookupCli(cliPreference);
-    if (resolved || (looksLikePath(cliPreference) && existsSync(cliPreference))) return;
-    console.error(`  WARNING: configured CLI preference '${cliPreference}' does not resolve.`);
+  const preference = cliPreference?.trim() ?? "";
+  if (preference) {
+    const resolved = lookupCli(preference);
+    if (resolved || (looksLikePath(preference) && existsSync(preference))) return;
+    console.error(`  WARNING: configured CLI preference '${preference}' does not resolve.`);
     console.error("  Agent play buttons may fail to create sessions until that command is installed or updated.");
     console.error("  Fix: fellow-agents config set cliPreference <name-or-path>");
     return;
@@ -59,6 +60,10 @@ function printCliLaunchWarning(cliPreference: string | null): void {
   console.error("  pty-win can start, but agent play buttons cannot create sessions until a CLI is installed.");
   console.error("  Install Claude Code/Copilot/pi, or run: fellow-agents config set cliPreference <name-or-path>");
 }
+
+export const __test__ = {
+  printCliLaunchWarning,
+};
 
 function printStartFailureAdvice(context: "download" | "emcom-server" | "pty-win" | "pty-win-install", opts: StartOptions): void {
   console.error("");
