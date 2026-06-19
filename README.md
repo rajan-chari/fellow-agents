@@ -114,6 +114,30 @@ emcom --identity workspaces/designer/identity.json register
 
 Restart pty-win and the new agent appears in the UI.
 
+## Workspace support model
+
+fellow-agents supports **one active agent identity per workspace folder**. The
+default and recommended setup is one `fellow-agents` service instance managing
+multiple child workspaces, such as `workspaces/coordinator`, `workspaces/coder`,
+and `workspaces/reviewer`. Each workspace needs its own `identity.json`,
+`CLAUDE.md`, hook settings, and distinct folder basename.
+
+Do not run multiple active write-capable or emcom/tracker-connected agents from
+the same physical folder. Same-folder agents share `identity.json`, pty-win hook
+files, working-state instructions, and the git working tree/index; pty-win also
+routes hooks by cwd and names sessions by folder basename. A pty-win shell in the
+same cwd as an agent session is not a safe read-only exception.
+
+For multiple agents working on the same source repo, use separate git worktrees
+or clones with distinct basenames, for example `banana-coder` and
+`banana-reviewer`. Sequential single-agent reuse of a folder is fine. External
+read-only inspection outside pty-win is fine if it does not use the folder's
+agent identity or write files.
+
+Run only one fellow-agents service instance per user unless you are intentionally
+testing internals. Runtime PID and log files under `~/.fellow-agents` are shared,
+so custom ports do not fully isolate concurrent service instances.
+
 ## Alternative install: git clone
 
 ```bash
