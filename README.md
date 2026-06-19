@@ -90,6 +90,18 @@ fellow-agents stop                      # stop all services
 fellow-agents clean                     # wipe cached binaries/pty-win install; preserve logs/preferences
 fellow-agents uninstall                 # dry-run removal preview
 fellow-agents uninstall --yes           # remove state/workspaces and fellow-agents-owned skills
+memtool --help                          # explicit file-backed working-log/field-note memory records
+```
+
+## Memory records
+
+`memtool` is an explicit, file-backed memory CLI for agent working-state. It saves human-readable JSON records under `memory/` for **working-log** and **field-note** entries only, with required citations, narrow private defaults, stale markers, links, and librarian promotion requests. It does not replace tracker, emcom, briefing files, field-notes, or team-wiki, and it never writes team-wiki directly.
+
+```bash
+memtool save --store field-note --subject "Runtime git is unavailable in release zips" --body "Bake build info at build time." --source "field-notes.md:19-20"
+memtool query "build info" --include-stale
+memtool link <memory-id> --tracker 2a6635ff --emcom b08b2503
+memtool promote-request <memory-id> --destination tooling/fellow-agents/releases.md --rationale "Repeated release gotcha" --dry-run
 ```
 
 ## Add your own agent
