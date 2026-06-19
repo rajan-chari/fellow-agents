@@ -184,6 +184,31 @@ test("promote-request enforces team scope and private-user routing", () => {
   }), /user-private records can only be routed to private-librarian/);
 });
 
+test("promote-request rejects unknown targets instead of bypassing team-wiki gates", () => {
+  const root = tempRoot();
+  const record = saveRecord({
+    root,
+    store: "field-note",
+    subject: "Private draft",
+    body: "This should not route through a typo target.",
+    sources: ["briefing.md:11"],
+    ownerAgent: "forge",
+  });
+
+  assert.throws(() => promoteRequest({
+    root,
+    id: record.id,
+    to: "wiki",
+    destination: "tooling/fellow-agents/setup.md",
+    rationale: "Typo should not bypass gates.",
+    dryRun: true,
+  }), /invalid promotion target 'wiki'/);
+
+  const result = run(["promote-request", record.id, "--dir", root, "--to", "teamwiki", "--destination", "x", "--rationale", "x", "--dry-run"]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /invalid promotion target 'teamwiki'/);
+});
+
 test("secret-like content and tracker-like status are rejected", () => {
   const root = tempRoot();
   assert.throws(() => saveRecord({
@@ -198,6 +223,23 @@ test("secret-like content and tracker-like status are rejected", () => {
   const result = run(["save", "--dir", root, "--store", "working-log", "--subject", "x", "--body", "x", "--source", "x", "--status", "triaged"]);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /do not have tracker-like --status/);
+});
+
+test("source citations must be real values, not missing boolean placeholders", () => {
+  const root = tempRoot();
+
+  assert.throws(() => saveRecord({
+    root,
+    store: "field-note",
+    subject: "Missing citation",
+    body: "No placeholder citations.",
+    sources: ["true"],
+    ownerAgent: "forge",
+  }), /citations must be real --source values/);
+
+  const result = run(["save", "--dir", root, "--store", "field-note", "--subject", "x", "--body", "x", "--source"]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /--source requires a value/);
 });
 
 test("invalid stale and review dates are rejected instead of silently becoming never stale", () => {

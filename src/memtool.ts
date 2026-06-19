@@ -5,6 +5,7 @@ import {
   linkRecord,
   listRecords,
   promoteRequest,
+  PROMOTION_TARGETS,
   queryRecords,
   resolveMemoryRoot,
   saveRecord,
@@ -12,6 +13,7 @@ import {
   SENSITIVITIES,
   STORES,
   type MemoryLink,
+  type PromotionTarget,
   type MemoryScope,
   type MemoryStore,
   type Sensitivity,
@@ -25,6 +27,29 @@ interface ParsedArgs {
 }
 
 function parseArgs(input: string[]): ParsedArgs {
+  const valueRequired = new Set([
+    "--source",
+    "--store",
+    "--subject",
+    "--body",
+    "--scope",
+    "--sensitivity",
+    "--owner-agent",
+    "--owner-user",
+    "--review-after",
+    "--stale-after",
+    "--dir",
+    "--tracker",
+    "--emcom",
+    "--thread",
+    "--commit",
+    "--file",
+    "--wiki",
+    "--to",
+    "--reviewer",
+    "--destination",
+    "--rationale",
+  ]);
   const positional: string[] = [];
   const flags = new Map<string, string[]>();
   for (let i = 0; i < input.length; i++) {
@@ -35,6 +60,9 @@ function parseArgs(input: string[]): ParsedArgs {
       }
       const next = input[i + 1];
       if (!next || next.startsWith("--")) {
+        if (valueRequired.has(arg)) {
+          throw new Error(`${arg} requires a value`);
+        }
         flags.set(arg, [...(flags.get(arg) ?? []), "true"]);
       } else {
         flags.set(arg, [...(flags.get(arg) ?? []), next]);
@@ -86,6 +114,14 @@ function parseSensitivity(value: string | undefined): Sensitivity | undefined {
     throw new Error(`invalid sensitivity '${value}'. Valid values: ${SENSITIVITIES.join(", ")}`);
   }
   return value as Sensitivity;
+}
+
+function parsePromotionTarget(value: string | undefined): PromotionTarget {
+  const target = value ?? "team-wiki";
+  if (!PROMOTION_TARGETS.includes(target as PromotionTarget)) {
+    throw new Error(`invalid promotion target '${target}'. Valid values: ${PROMOTION_TARGETS.join(", ")}`);
+  }
+  return target as PromotionTarget;
 }
 
 function root(parsed: ParsedArgs): string {
@@ -197,7 +233,7 @@ async function main(): Promise<void> {
     const result = promoteRequest({
       root: root(parsed),
       id,
-      to: flag(parsed, "--to") ?? "team-wiki",
+      to: parsePromotionTarget(flag(parsed, "--to")),
       reviewer: flag(parsed, "--reviewer"),
       destination: required(parsed, "--destination"),
       rationale: required(parsed, "--rationale"),

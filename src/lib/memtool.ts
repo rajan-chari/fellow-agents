@@ -24,6 +24,9 @@ export type Sensitivity = (typeof SENSITIVITIES)[number];
 export const LIFECYCLES = ["draft", "requested", "needs-info", "accepted", "rejected", "superseded", "stale"] as const;
 export type MemoryLifecycle = (typeof LIFECYCLES)[number];
 
+export const PROMOTION_TARGETS = ["team-wiki", "private-wiki"] as const;
+export type PromotionTarget = (typeof PROMOTION_TARGETS)[number];
+
 export interface MemoryLink {
   type: "tracker" | "emcom" | "thread" | "commit" | "file" | "wiki";
   target: string;
@@ -80,7 +83,7 @@ export interface QueryOptions {
 export interface PromoteRequestOptions {
   root: string;
   id: string;
-  to: string;
+  to: PromotionTarget;
   reviewer?: string;
   destination: string;
   rationale: string;
@@ -111,7 +114,8 @@ export function defaultOwner(root: string): string {
 
 export function saveRecord(opts: SaveOptions): MemoryRecord {
   assertAllowed(STORES, opts.store, "store");
-  if (opts.sources.length === 0) {
+  const sources = normalizeCitations(opts.sources);
+  if (sources.length === 0) {
     throw new Error("save requires at least one --source citation");
   }
   const scope = opts.scope ?? "agent-local";
@@ -135,7 +139,7 @@ export function saveRecord(opts: SaveOptions): MemoryRecord {
     sensitivity,
     subject: opts.subject,
     body: opts.body,
-    source_citations: opts.sources,
+    source_citations: sources,
     created_at: now,
     updated_at: now,
     review_after: opts.reviewAfter,
@@ -193,6 +197,7 @@ export function linkRecord(root: string, id: string, links: MemoryLink[]): Memor
 
 export function promoteRequest(opts: PromoteRequestOptions): { record: MemoryRecord; message: string; sent: boolean; requestId?: string } {
   const record = readRecord(opts.root, opts.id);
+  assertAllowed(PROMOTION_TARGETS, opts.to, "promotion target");
   if (isStale(record, opts.now)) {
     throw new Error("stale records cannot be promoted until reverified");
   }
@@ -202,6 +207,7 @@ export function promoteRequest(opts: PromoteRequestOptions): { record: MemoryRec
   if (opts.to === "team-wiki" && (record.scope !== "team-proposed" || (record.sensitivity !== "team-public" && record.sensitivity !== "internal"))) {
     throw new Error("team-wiki promotion requires scope=team-proposed and sensitivity=team-public or internal");
   }
+  record.source_citations = normalizeCitations(record.source_citations);
   if (record.source_citations.length === 0) {
     throw new Error("promotion requires exact source citations");
   }
@@ -356,6 +362,14 @@ function assertDate(value: string | undefined, label: string): void {
   if (Number.isNaN(Date.parse(value))) {
     throw new Error(`invalid ${label} date '${value}'; use an ISO-8601 timestamp or date`);
   }
+}
+
+function normalizeCitations(citations: string[]): string[] {
+  const normalized = citations.map((citation) => citation.trim()).filter(Boolean);
+  if (normalized.some((citation) => citation === "true" || citation === "false")) {
+    throw new Error("citations must be real --source values, not boolean placeholders");
+  }
+  return normalized;
 }
 
 function readIdentity(dir: string): { name?: string } | null {
