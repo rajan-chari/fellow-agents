@@ -39,6 +39,8 @@ Commands:
   fellow-agents uninstall [--yes]    Remove all state, including scaffolded workspaces
   fellow-agents config <get|set>     Read or write user preferences (see 'config --help')
   fellow-agents status               Read-only diagnostics (alias: doctor)
+  memtool <save|list|query|link|promote-request>
+                                    File-backed working-log and field-note memory records
 
 Start options:
   --port <number>       pty-win port (default: 3700)

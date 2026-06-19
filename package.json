@@ -5,6 +5,7 @@
   "type": "module",
   "bin": {
     "fellow-agents": "dist/cli.js",
+    "memtool": "dist/memtool.js",
     "emcom": "dist/shims/emcom.js",
     "emcom-server": "dist/shims/emcom-server.js",
     "tracker": "dist/shims/tracker.js",
