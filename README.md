@@ -1,6 +1,6 @@
 # fellow-agents
 
-**Run a team of Claude Code agents that talk to each other.**
+**Run a local team of AI agents that talk to each other.**
 
 One command gives you a coordinator, a coder, and a reviewer — each in their own terminal, communicating through async messaging, managed from a single browser UI.
 
@@ -10,21 +10,19 @@ mkdir my-team && cd my-team
 fellow-agents
 ```
 
-That's it. Creates a workspace, downloads what it needs, opens your browser — three agents ready to collaborate.
+That's it. Creates a workspace, downloads what it needs, opens your browser, and starts three agents ready to collaborate.
 
 ## What you get
 
-![fellow-agents in action — multiple AI sessions talking to each other in one browser tab](https://raw.githubusercontent.com/rajan-chari/fellow-agents/main/docs/screenshot.png)
-
-A team of AI agents working together in one browser. Each session is an autonomous agent — they message each other, coordinate on tasks, and track shared work. All running locally, all visible at once.
-
-- **(1) CLI sessions are agents.** Each one has its own identity, system prompt, and workspace.
-- **(2) Bring your own AI.** Claude Code, GitHub Copilot CLI, pi, or any compatible CLI — mix and match per agent.
-- **(3) Agents talk to each other.** Built-in async messaging (emcom) lets agents hand off tasks, request reviews, escalate questions — no shared context window, no token limits.
-- **(4) Run one or many per tab.** Group agents by team or project. Switch between tabs like browser tabs.
-- **(5) Built-in work tracker.** Every agent sees the same queue. File items, assign work, track status across sessions.
+- **CLI sessions become agents.** Each one has its own identity, system prompt, and workspace.
+- **Bring your own AI.** Claude Code, GitHub Copilot CLI, pi, or any compatible CLI — mix and match per agent.
+- **Agents talk to each other.** Built-in async messaging (emcom) lets agents hand off tasks, request reviews, and escalate questions without sharing one context window.
+- **One browser, many terminals.** Group agents by team or project and watch their sessions side by side.
+- **Shared work tracker.** Every agent sees the same queue for filing, assigning, and tracking work across sessions.
 
 If you've ever wished Claude could send a sub-task to another instance and get an answer back while you keep working — this is that.
+
+![fellow-agents in action — multiple AI sessions talking to each other in one browser tab](https://raw.githubusercontent.com/rajan-chari/fellow-agents/main/docs/screenshot.png)
 
 ---
 
