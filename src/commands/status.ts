@@ -1,5 +1,5 @@
 import { execFileSync } from "child_process";
-import { existsSync, readFileSync, readdirSync } from "fs";
+import { existsSync, readFileSync, readdirSync, realpathSync } from "fs";
 import http from "http";
 import { join, resolve } from "path";
 import { arch, homedir, platform } from "os";
@@ -36,6 +36,12 @@ function readJson(path: string): Record<string, any> | null {
   } catch {
     return null;
   }
+}
+
+function workspaceDirs(workspacesDir: string) {
+  return readdirSync(workspacesDir, { withFileTypes: true })
+    .filter((item) => item.isDirectory())
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function readPid(name: string): number | null {
@@ -92,7 +98,8 @@ function workspaceIdentityChecks(workspacesDir: string, emcomPort: number): Chec
     return [{ name: "workspaces", status: "warn", detail: `${workspacesDir} not found` }];
   }
   const checks: Check[] = [];
-  for (const entry of readdirSync(workspacesDir, { withFileTypes: true }).filter((item) => item.isDirectory())) {
+  const identities = new Map<string, string[]>();
+  for (const entry of workspaceDirs(workspacesDir)) {
     const identityPath = join(workspacesDir, entry.name, "identity.json");
     const identity = readJson(identityPath);
     if (!identity) {
@@ -101,15 +108,75 @@ function workspaceIdentityChecks(workspacesDir: string, emcomPort: number): Chec
     }
     const expected = `http://127.0.0.1:${emcomPort}`;
     const status = identity["server"] === expected ? "ok" : "warn";
-    checks.push({ name: `identity:${entry.name}`, status, detail: `${identity["name"] ?? "(no name)"} -> ${identity["server"] ?? "(no server)"}` });
+    const name = typeof identity["name"] === "string" && identity["name"].trim() ? identity["name"].trim() : "(no name)";
+    checks.push({ name: `identity:${entry.name}`, status, detail: `${name} -> ${identity["server"] ?? "(no server)"}` });
+    const key = name.toLowerCase();
+    identities.set(key, [...(identities.get(key) ?? []), entry.name]);
+  }
+  for (const [name, workspaces] of identities) {
+    if (name !== "(no name)" && workspaces.length > 1) {
+      checks.push({
+        name: `identity-duplicate:${name}`,
+        status: "warn",
+        detail: `same emcom/tracker identity appears in: ${workspaces.join(", ")}`,
+      });
+    }
   }
   return checks;
+}
+
+function workspaceIsolationChecks(workspacesDir: string): Check[] {
+  if (!existsSync(workspacesDir)) return [];
+  const checks: Check[] = [];
+  const realpaths = new Map<string, string[]>();
+  const basenames = new Map<string, string[]>();
+
+  for (const entry of workspaceDirs(workspacesDir)) {
+    const workspacePath = join(workspacesDir, entry.name);
+    const basenameKey = entry.name.toLowerCase();
+    basenames.set(basenameKey, [...(basenames.get(basenameKey) ?? []), workspacePath]);
+
+    try {
+      const real = realpathSync.native(workspacePath).toLowerCase();
+      realpaths.set(real, [...(realpaths.get(real) ?? []), workspacePath]);
+    } catch {
+      checks.push({ name: `workspace-realpath:${entry.name}`, status: "warn", detail: `${workspacePath} could not be resolved` });
+    }
+  }
+
+  for (const [basename, paths] of basenames) {
+    if (paths.length > 1) {
+      checks.push({
+        name: `workspace-basename:${basename}`,
+        status: "warn",
+        detail: `pty-win session names use folder basenames; duplicate basename in: ${paths.join(", ")}`,
+      });
+    }
+  }
+  for (const paths of realpaths.values()) {
+    if (paths.length > 1) {
+      checks.push({
+        name: `workspace-realpath-duplicate`,
+        status: "warn",
+        detail: `multiple workspaces resolve to the same folder: ${paths.join(", ")}`,
+      });
+    }
+  }
+
+  return checks;
+}
+
+function collectStrings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap((item) => collectStrings(item));
+  if (value && typeof value === "object") return Object.values(value).flatMap((item) => collectStrings(item));
+  return [];
 }
 
 function hookChecks(workspacesDir: string): Check[] {
   if (!existsSync(workspacesDir)) return [];
   const checks: Check[] = [];
-  for (const entry of readdirSync(workspacesDir, { withFileTypes: true }).filter((item) => item.isDirectory())) {
+  for (const entry of workspaceDirs(workspacesDir)) {
     const settingsPath = join(workspacesDir, entry.name, ".claude", "settings.local.json");
     const settings = readJson(settingsPath);
     const hooks = settings?.["hooks"];
@@ -122,6 +189,47 @@ function hookChecks(workspacesDir: string): Check[] {
     });
   }
   return checks;
+}
+
+function hookPortChecks(workspacesDir: string, expectedPort: number): Check[] {
+  if (!existsSync(workspacesDir)) return [];
+  const checks: Check[] = [];
+  const hookPattern = /127\.0\.0\.1:(\d+)\/api\/hook\//g;
+
+  for (const entry of workspaceDirs(workspacesDir)) {
+    const configPaths = [
+      join(workspacesDir, entry.name, ".claude", "settings.local.json"),
+      join(workspacesDir, entry.name, ".github", "copilot", "settings.local.json"),
+    ];
+    for (const configPath of configPaths) {
+      const settings = readJson(configPath);
+      if (!settings) continue;
+      const ports = new Set<number>();
+      for (const text of collectStrings(settings)) {
+        for (const match of text.matchAll(hookPattern)) {
+          ports.add(Number(match[1]));
+        }
+      }
+      const unexpected = [...ports].filter((port) => port !== expectedPort);
+      if (unexpected.length > 0) {
+        checks.push({
+          name: `hook-port:${entry.name}`,
+          status: "warn",
+          detail: `${configPath} points pty-win hooks at ${unexpected.join(", ")}; expected ${expectedPort}`,
+        });
+      }
+    }
+  }
+
+  return checks;
+}
+
+function serviceNamespaceChecks(): Check[] {
+  return [{
+    name: "service-namespace",
+    status: "ok",
+    detail: "PID/log files under ~/.fellow-agents are shared; run only one fellow-agents service instance per user",
+  }];
 }
 
 function skillChecks(): Check[] {
@@ -175,6 +283,7 @@ export async function status(opts: StatusOptions): Promise<void> {
   const checks: Check[] = [
     { name: "emcom-server", status: emcomHealth, detail: `http://127.0.0.1:${opts.emcomPort}/api/health pid=${readPid("emcom-server") ?? "unknown"} running=${readPid("emcom-server") ? pidRunning(readPid("emcom-server")!) : "unknown"}` },
     { name: "pty-win", status: ptyHealth, detail: `http://127.0.0.1:${opts.port}/ pid=${readPid("pty-win") ?? "unknown"} running=${readPid("pty-win") ? pidRunning(readPid("pty-win")!) : "unknown"}` },
+    ...serviceNamespaceChecks(),
     ...["emcom", "tracker", "emcom-server"].map((name) => {
       const bin = join(binDir, `${name}${binarySuffix()}`);
       return { name: `binary:${name}`, status: existsSync(bin) ? "ok" as const : "warn" as const, detail: bin };
@@ -184,7 +293,9 @@ export async function status(opts: StatusOptions): Promise<void> {
       return { name: `PATH:${name}`, status: resolved ? "ok" as const : "warn" as const, detail: resolved ?? "not found" };
     }),
     ...workspaceIdentityChecks(workspacesDir, opts.emcomPort),
+    ...workspaceIsolationChecks(workspacesDir),
     ...hookChecks(workspacesDir),
+    ...hookPortChecks(workspacesDir, opts.port),
     ...skillChecks(),
   ];
 

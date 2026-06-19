@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { formatSetupComplete } from "../dist/commands/start.js";
@@ -67,6 +69,37 @@ test("doctor is an alias for read-only status diagnostics", () => {
   assert.equal(result.status, 0);
   assert.match(result.stdout, /fellow-agents status/);
   assert.match(result.stdout, /This command is read-only/);
+});
+
+test("status warns about same-folder support hazards", () => {
+  const root = mkdtempSync(join(tmpdir(), "fellow-agents-status-"));
+  const workspaceRoot = join(root, "workspaces");
+  const coder = join(workspaceRoot, "coder");
+  const reviewer = join(workspaceRoot, "reviewer");
+  mkdirSync(join(coder, ".claude"), { recursive: true });
+  mkdirSync(reviewer, { recursive: true });
+  writeFileSync(join(coder, "identity.json"), JSON.stringify({
+    name: "shared",
+    server: "http://127.0.0.1:8800",
+  }));
+  writeFileSync(join(reviewer, "identity.json"), JSON.stringify({
+    name: "shared",
+    server: "http://127.0.0.1:8800",
+  }));
+  writeFileSync(join(coder, ".claude", "settings.local.json"), JSON.stringify({
+    hooks: {
+      Stop: [{ hooks: [{ type: "http", url: "http://127.0.0.1:3700/api/hook/stop" }] }],
+      Notification: [{ hooks: [{ type: "http", url: "http://127.0.0.1:3700/api/hook/notify" }] }],
+      UserPromptSubmit: [{ hooks: [{ type: "http", url: "http://127.0.0.1:3700/api/hook/prompt-submit" }] }],
+    },
+  }));
+
+  const result = run(["status", "--dir", root, "--port", "4000", "--emcom-port", "9000"]);
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /\[OK\] service-namespace: PID\/log files under ~\/.fellow-agents are shared/);
+  assert.match(result.stdout, /\[WARN\] identity-duplicate:shared: same emcom\/tracker identity appears in: coder, reviewer/);
+  assert.match(result.stdout, /\[WARN\] hook-port:coder: .*settings\.local\.json points pty-win hooks at 3700; expected 4000/);
 });
 
 test("setup success output includes lifecycle and troubleshooting commands", () => {
