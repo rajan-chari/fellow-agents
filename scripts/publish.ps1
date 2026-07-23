@@ -37,9 +37,9 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $repoRoot
 
 Write-Host 'Checking prerequisites...'
-git --version
-node --version
-npm --version
+Invoke-Native { git --version }
+Invoke-Native { node --version }
+Invoke-Native { npm --version }
 
 $version = (node -p "require('./package.json').version")
 if ($LASTEXITCODE -ne 0) { throw 'Failed to read version from package.json' }
@@ -54,12 +54,22 @@ if ($LASTEXITCODE -ne 0) {
   Invoke-Native { npm whoami --registry $registry }
 }
 
-Write-Host 'Checking current npm latest...'
+Write-Host 'Checking current npm latest (informational)...'
 $latest = (npm view fellow-agents version --registry $registry)
 if ($LASTEXITCODE -ne 0) { throw 'Failed to query current npm latest version' }
 $latest = $latest.Trim()
 Write-Host "npm latest is $latest"
-if ($latest -eq $version) {
+
+# Skip if this exact version already exists on npm. Comparing only against the
+# `latest` dist-tag is not enough: publishing a specific released tag that
+# exists but is not latest would otherwise fail with "cannot publish over
+# existing version". `npm view <pkg>@<version> version` prints the version if it
+# exists and nothing if it does not.
+Write-Host "Checking whether fellow-agents@$version already exists on npm..."
+$existing = (npm view "fellow-agents@$version" version --registry $registry)
+if ($LASTEXITCODE -ne 0) { throw "Failed to query npm for fellow-agents@$version" }
+$existing = $existing.Trim()
+if ($existing -eq $version) {
   Write-Host "fellow-agents@$version is already published. Nothing to do."
   exit 0
 }
@@ -73,13 +83,12 @@ Invoke-Native { npm test }
 Write-Host "Publishing fellow-agents@$version (prepublishOnly rebuilds dist/)..."
 Invoke-Native { npm publish --access public --registry $registry }
 
-Write-Host 'Verifying npm latest...'
-$after = (npm view fellow-agents version --registry $registry)
-if ($LASTEXITCODE -ne 0) { throw 'Failed to query npm latest version after publish' }
+Write-Host 'Verifying publish...'
+$after = (npm view "fellow-agents@$version" version --registry $registry)
+if ($LASTEXITCODE -ne 0) { throw "Failed to verify fellow-agents@$version after publish" }
 $after = $after.Trim()
-Write-Host "npm latest is now $after"
 if ($after -ne $version) {
-  throw "Publish verification failed: expected $version, got $after"
+  throw "Publish verification failed: fellow-agents@$version not found on npm after publish (got '$after')"
 }
 
 Write-Host "Published fellow-agents@$version successfully."
