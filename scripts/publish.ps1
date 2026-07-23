@@ -41,7 +41,9 @@ git --version
 node --version
 npm --version
 
-$version = (node -p "require('./package.json').version").Trim()
+$version = (node -p "require('./package.json').version")
+if ($LASTEXITCODE -ne 0) { throw 'Failed to read version from package.json' }
+$version = $version.Trim()
 Write-Host "Package version in this checkout: $version"
 
 Write-Host "Checking npm identity on $registry..."
@@ -53,7 +55,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host 'Checking current npm latest...'
-$latest = (npm view fellow-agents version --registry $registry).Trim()
+$latest = (npm view fellow-agents version --registry $registry)
+if ($LASTEXITCODE -ne 0) { throw 'Failed to query current npm latest version' }
+$latest = $latest.Trim()
 Write-Host "npm latest is $latest"
 if ($latest -eq $version) {
   Write-Host "fellow-agents@$version is already published. Nothing to do."
@@ -70,7 +74,9 @@ Write-Host "Publishing fellow-agents@$version (prepublishOnly rebuilds dist/)...
 Invoke-Native { npm publish --access public --registry $registry }
 
 Write-Host 'Verifying npm latest...'
-$after = (npm view fellow-agents version --registry $registry).Trim()
+$after = (npm view fellow-agents version --registry $registry)
+if ($LASTEXITCODE -ne 0) { throw 'Failed to query npm latest version after publish' }
+$after = $after.Trim()
 Write-Host "npm latest is now $after"
 if ($after -ne $version) {
   throw "Publish verification failed: expected $version, got $after"
