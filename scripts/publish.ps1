@@ -8,13 +8,14 @@
 #
 # What it does:
 #   - Verifies git/node/npm are present.
+#   - Fails fast if the working tree has uncommitted changes.
 #   - Ensures you are logged in to the npm registry (prompts npm login if not).
-#   - Skips if the target version is already the npm latest.
+#   - Skips if the exact package version already exists on npm.
 #   - Runs npm ci and npm test.
 #   - Publishes with npm publish. The package.json prepublishOnly hook runs
 #     "npm run build" (tsc) automatically, so dist/ is rebuilt before packing;
 #     only dist/, templates/, and skills/ are published (see package.json files).
-#   - Verifies the npm latest matches the published version.
+#   - Verifies the exact published version exists on npm afterward.
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -46,6 +47,14 @@ if ($LASTEXITCODE -ne 0) { throw 'Failed to read version from package.json' }
 $version = $version.Trim()
 Write-Host "Package version in this checkout: $version"
 
+# Refuse to publish uncommitted changes: npm publish packs whatever is in the
+# working tree, so a dirty tree could ship unintended edits.
+$dirty = (git status --porcelain)
+if ($LASTEXITCODE -ne 0) { throw 'Failed to check git working tree status' }
+if ($dirty) {
+  throw 'Working tree has uncommitted changes. Commit, stash, or use a clean checkout before publishing.'
+}
+
 Write-Host "Checking npm identity on $registry..."
 npm whoami --registry $registry
 if ($LASTEXITCODE -ne 0) {
@@ -75,7 +84,7 @@ if ($LASTEXITCODE -eq 0 -and $existing -and $existing.Trim() -eq $version) {
 Write-Host "fellow-agents@$version not found on npm; proceeding to publish."
 
 Write-Host 'Installing dependencies (npm ci)...'
-Invoke-Native { npm ci --no-audit --no-fund }
+Invoke-Native { npm ci --no-audit --no-fund --registry $registry }
 
 Write-Host 'Running tests (npm test, which also builds)...'
 Invoke-Native { npm test }
