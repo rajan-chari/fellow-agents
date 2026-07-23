@@ -21,6 +21,17 @@ Set-StrictMode -Version Latest
 
 $registry = 'https://registry.npmjs.org/'
 
+# Runs a native command and throws if it exits non-zero. PowerShell does not
+# treat non-zero exit codes from external programs as terminating errors, even
+# with $ErrorActionPreference = 'Stop', so guard each critical step explicitly.
+function Invoke-Native {
+  param([Parameter(Mandatory)][scriptblock]$Command)
+  & $Command
+  if ($LASTEXITCODE -ne 0) {
+    throw "Command failed with exit code ${LASTEXITCODE}: $Command"
+  }
+}
+
 # Resolve repo root (parent of this scripts/ directory) and run from there.
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $repoRoot
@@ -34,12 +45,11 @@ $version = (node -p "require('./package.json').version").Trim()
 Write-Host "Package version in this checkout: $version"
 
 Write-Host "Checking npm identity on $registry..."
-try {
-  npm whoami --registry $registry
-} catch {
+npm whoami --registry $registry
+if ($LASTEXITCODE -ne 0) {
   Write-Host 'Not logged in to npmjs. Starting npm login...'
-  npm login --registry $registry
-  npm whoami --registry $registry
+  Invoke-Native { npm login --registry $registry }
+  Invoke-Native { npm whoami --registry $registry }
 }
 
 Write-Host 'Checking current npm latest...'
@@ -51,13 +61,13 @@ if ($latest -eq $version) {
 }
 
 Write-Host 'Installing dependencies (npm ci)...'
-npm ci --no-audit --no-fund
+Invoke-Native { npm ci --no-audit --no-fund }
 
 Write-Host 'Running tests (npm test, which also builds)...'
-npm test
+Invoke-Native { npm test }
 
 Write-Host "Publishing fellow-agents@$version (prepublishOnly rebuilds dist/)..."
-npm publish --access public --registry $registry
+Invoke-Native { npm publish --access public --registry $registry }
 
 Write-Host 'Verifying npm latest...'
 $after = (npm view fellow-agents version --registry $registry).Trim()
