@@ -14,7 +14,8 @@
 #   - Runs npm ci and npm test.
 #   - Publishes with npm publish. The package.json prepublishOnly hook runs
 #     "npm run build" (tsc) automatically, so dist/ is rebuilt before packing;
-#     only dist/, templates/, and skills/ are published (see package.json files).
+#     only dist/, templates/, and skills/ are published (see the "files" field
+#     in package.json).
 #   - Verifies the exact published version exists on npm afterward.
 
 $ErrorActionPreference = 'Stop'
