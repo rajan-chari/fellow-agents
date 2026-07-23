@@ -64,15 +64,15 @@ Write-Host "npm latest is $latest"
 # `latest` dist-tag is not enough: publishing a specific released tag that
 # exists but is not latest would otherwise fail with "cannot publish over
 # existing version". `npm view <pkg>@<version> version` prints the version if it
-# exists and nothing if it does not.
+# exists, and exits non-zero (E404) if it does not, so a non-zero exit here is
+# the expected "not published yet" case, not an error to fail on.
 Write-Host "Checking whether fellow-agents@$version already exists on npm..."
-$existing = (npm view "fellow-agents@$version" version --registry $registry)
-if ($LASTEXITCODE -ne 0) { throw "Failed to query npm for fellow-agents@$version" }
-$existing = $existing.Trim()
-if ($existing -eq $version) {
+$existing = (npm view "fellow-agents@$version" version --registry $registry 2>$null)
+if ($LASTEXITCODE -eq 0 -and $existing -and $existing.Trim() -eq $version) {
   Write-Host "fellow-agents@$version is already published. Nothing to do."
   exit 0
 }
+Write-Host "fellow-agents@$version not found on npm; proceeding to publish."
 
 Write-Host 'Installing dependencies (npm ci)...'
 Invoke-Native { npm ci --no-audit --no-fund }
