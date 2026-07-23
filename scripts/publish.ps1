@@ -74,13 +74,19 @@ Write-Host "npm latest is $latest"
 # `latest` dist-tag is not enough: publishing a specific released tag that
 # exists but is not latest would otherwise fail with "cannot publish over
 # existing version". `npm view <pkg>@<version> version` prints the version if it
-# exists, and exits non-zero (E404) if it does not, so a non-zero exit here is
-# the expected "not published yet" case, not an error to fail on.
+# exists and exits non-zero with an E404 when it does not. Only an E404 means
+# "not published yet"; any other failure (network/auth/registry) is fatal.
 Write-Host "Checking whether fellow-agents@$version already exists on npm..."
-$existing = (npm view "fellow-agents@$version" version --registry $registry 2>$null)
-if ($LASTEXITCODE -eq 0 -and $existing -and $existing.Trim() -eq $version) {
-  Write-Host "fellow-agents@$version is already published. Nothing to do."
-  exit 0
+$existingOutput = (npm view "fellow-agents@$version" version --registry $registry 2>&1)
+$existingExit = $LASTEXITCODE
+$existingText = ($existingOutput | Out-String).Trim()
+if ($existingExit -eq 0) {
+  if ($existingText -eq $version) {
+    Write-Host "fellow-agents@$version is already published. Nothing to do."
+    exit 0
+  }
+} elseif ($existingText -notmatch 'E404|404') {
+  throw "Failed to query npm for fellow-agents@${version}:`n$existingText"
 }
 Write-Host "fellow-agents@$version not found on npm; proceeding to publish."
 
